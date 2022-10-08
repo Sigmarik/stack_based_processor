@@ -173,8 +173,6 @@ double some_complex_value = (number_of_bats + number_of_caves -
 **argparser** - module for parsing command line arguments. Used only by **main.cpp**, but is very agile and can be helpful for any program that should read command line arguments.
 
 **utils** - module with "orphan" functions.
-
-**main.cpp** - entry point of the program. When ran it functions as a console for stack operations.
 ## Logger Structure
 **logger** module, when initialized through ```log_init()``` function, creates file that later would be filled with logs and defines certaint importance thrashold that would prevent less important messages (like status reports) from filling the log file. When function ```log_printf()``` is called, it receives importance level of a message to print, and, if that importance is less then logger threshold, ignores the message.
 ## Contact Information

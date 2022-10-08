@@ -269,7 +269,7 @@ void process_line(const char* line, FILE* output, FILE* listing) {
     if (listing) {
         fprintf(listing, "\"%s\" ->", line);
         for (int id = 0; id < (int)cmd_size; ++id) {
-            fprintf(listing, " 0x%0X", sequence[id]);
+            fprintf(listing, " 0x%02X", sequence[id] & 0xFF);
         }
         fputc('\n', listing);
     }
