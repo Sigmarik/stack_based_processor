@@ -145,7 +145,13 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Starting executing commands...\n");
     size_t delta = 0;
     while ((delta = execute_command(pointer, &stack, &errno)) != 0) {
+        char* prev_ptr = pointer;
         pointer += delta;
+        _LOG_FAIL_CHECK_(pointer > content, "error", ERROR_REPORTS, {
+            log_printf(ERROR_REPORTS, "error", "Negative pointer value of 0x%0*X after executing command at 0x%0*X. Terminating.\n", 
+                                                sizeof(uintptr_t), pointer - content, sizeof(uintptr_t), prev_ptr - content);
+            return EXIT_FAILURE;
+        }, &errno, EFAULT);
     }
 
     log_printf(STATUS_REPORTS, "status", "Execution finished, cleaning allocated memory...\n");
