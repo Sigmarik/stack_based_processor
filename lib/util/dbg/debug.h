@@ -45,7 +45,7 @@ do {                                                                            
     if (!(equation)) {                                                                                                  \
         int* errptr = errcode;                                                                                          \
         if (errptr) *(errptr) = (errtype);                                                                              \
-        log_printf(importance, "error", "Equation `%s` in file %s at line %d failed.\n", #equation, __FILE__, __LINE__);\
+        log_printf(importance, tag, "Equation `%s` in file %s at line %d failed.\n", #equation, __FILE__, __LINE__);\
         action;                                                                                                         \
     }                                                                                                                   \
 } while(0)

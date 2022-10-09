@@ -70,8 +70,31 @@ void put_header(FILE* output);
  * @param line command to process
  * @param output output binary file
  * @param listing output listing file
+ * @param err_code variable to use as errno
  */
-void process_line(const char* line, FILE* output, FILE* listing = NULL);
+void process_line(const char* line, FILE* output, FILE* listing = NULL, int* const err_code = NULL);
+
+static size_t label_max_count = 1024;
+static hash_t* label_hashes = NULL;
+static uintptr_t* label_values = NULL;
+
+/**
+ * @brief Add label to label table.
+ * 
+ * @param hash label name hash
+ * @param point label value
+ * @param err_code variable to use as errno
+ */
+void add_label(hash_t hash, uintptr_t point, int* const err_code = NULL);
+
+/**
+ * @brief Get the label object from label name hash.
+ * 
+ * @param hash label name hash
+ * @param err_code variable to use as errno
+ * @return uintptr_t 
+ */
+uintptr_t get_label(hash_t hash, int* const err_code = NULL);
 
 // Ignore everything less or equaly important as status reports.
 static int log_threshold = STATUS_REPORTS + 1;
@@ -82,8 +105,7 @@ static const size_t MAX_COMMAND_SIZE = 128;
 
 static const int NUMBER_OF_OWLS = 10;
 
-static const int NUMBER_OF_TAGS = 3;
-static const struct ActionTag LINE_TAGS[NUMBER_OF_TAGS] = {
+static const struct ActionTag LINE_TAGS[] = {
     {
         .name = {'O', "owl"}, 
         .action = {
@@ -113,7 +135,18 @@ static const struct ActionTag LINE_TAGS[NUMBER_OF_TAGS] = {
         .description = "set if program should generate listing or not.\n"
                         "\tDoes not check if integer was specified."
     },
+    {
+        .name = {'S', ""}, 
+        .action = {
+            .parameters = (void*[]) {&label_max_count},
+            .parameters_length = 1, 
+            .function = edit_int,
+        },
+        .description = "set maximum number of labels.\n"
+                        "\tDoes not check if integer was specified."
+    },
 };
+static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
 
 const char* DEFAULT_OUTPUT_NAME = "a.instr";
 
@@ -124,6 +157,10 @@ int main(const int argc, const char** argv) {
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
+    label_hashes = (hash_t*)   calloc(label_max_count, sizeof(*label_hashes));
+    label_values = (uintptr_t*)calloc(label_max_count, sizeof(*label_values));
+    _LOG_FAIL_CHECK_(label_hashes, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
+    _LOG_FAIL_CHECK_(label_values, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
 
     const char* file_name = get_input_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
@@ -171,11 +208,23 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Writing header to the output file.\n");
     put_header(output);
 
-    log_printf(STATUS_REPORTS, "status", "Writing main program...\n");
+    log_printf(STATUS_REPORTS, "status", "Entering first search...\n");
 
     for (int line_id = 0; line_id < line_count; ++line_id) {
         log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
-        process_line(lines[line_id], output, listing);
+        process_line(lines[line_id], output, listing, &errno);
+    }
+
+    log_printf(STATUS_REPORTS, "status", "Entering final loop...\n");
+    log_printf(STATUS_REPORTS, "status", "Reseting output file...\n");
+    fseek(output, 0, SEEK_SET);
+    put_header(output);
+    log_printf(STATUS_REPORTS, "status", "Reseting listing file...\n");
+    fseek(listing, 0, SEEK_SET);
+
+    for (int line_id = 0; line_id < line_count; ++line_id) {
+        log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
+        process_line(lines[line_id], output, listing, &errno);
     }
 
     free(buffer);
@@ -238,7 +287,7 @@ void put_header(FILE* output) {
     fseek(output, HEADER_SIZE, SEEK_SET);
 }
 
-void process_line(const char* line, FILE* output, FILE* listing) {
+void process_line(const char* line, FILE* output, FILE* listing, int* const err_code) {
     _LOG_FAIL_CHECK_(line,   "error", ERROR_REPORTS, return, NULL, 0);
     _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, return, NULL, 0);
 
@@ -252,10 +301,10 @@ void process_line(const char* line, FILE* output, FILE* listing) {
     size_t cmd_size = 0;
     hash_t hash = 0;
     
-    if (*line != '\0' && first_char != CMD_COMMENT_CHAR) {
+    if (*line != '\0' && first_char != CMD_COMMENT_CHAR) do {
 
         sscanf(line, "%s%n", code, &shift);
-        hash = get_hash(code, code + strlen(code) - 1);
+        hash = get_hash(code, code + strlen(code));
 
         for (int cmd_id = 0; cmd_id < (int)(sizeof(CMD_SOURCE) / sizeof(CMD_SOURCE[0])); ++cmd_id) {
             if (hash != CMD_HASHES[cmd_id]) continue;
@@ -264,16 +313,34 @@ void process_line(const char* line, FILE* output, FILE* listing) {
             break;
         }
 
-        _LOG_FAIL_CHECK_(cmd_size, "warning", WARNINGS, return, NULL, 0);
+        if (hash == CMD_LABEL_HASH) {
+            char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
+            sscanf(line + shift, "%s", lbl_name);
+            hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+            add_label(lbl_hash, ftell(output), err_code);
+            log_printf(STATUS_REPORTS, "status", "Label %s was set to %0*X.\n", lbl_name, sizeof(uintptr_t), ftell(output));
+            break;
+        }
+
+        _LOG_FAIL_CHECK_(cmd_size, "warning", WARNINGS, return, err_code, ENXIO);
         log_printf(STATUS_REPORTS, "status", "Command type -> 0x%0X (%s).\n", sequence[0], CMD_SOURCE[(int)sequence[0]]);
 
         // TODO: CoPyPaStA
-        if (hash == CMD_HASHES[CMD_PUSH] || hash == CMD_HASHES[CMD_JMP] || hash == CMD_HASHES[CMD_JMPG]) {
+        if (hash == CMD_HASHES[CMD_PUSH]) {
             sscanf(line + shift, "%d", &argument);
             *(int*)(sequence + 1) = argument;
             cmd_size += sizeof(argument);
         }
-    }
+
+        if (hash == CMD_HASHES[CMD_JMP] || hash == CMD_HASHES[CMD_JMPG]) {
+            char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
+            sscanf(line + shift, "%s", lbl_name);
+            hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+            argument = get_label(lbl_hash, err_code) - ftell(output);
+            *(int*)(sequence + 1) = argument;
+            cmd_size += sizeof(argument);
+        }
+    } while (0);
 
     log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
     fwrite(sequence, cmd_size, 1, output);
@@ -284,4 +351,36 @@ void process_line(const char* line, FILE* output, FILE* listing) {
         }
         fputc('\n', listing);
     }
+}
+
+static size_t label_count = 0;
+
+void add_label(hash_t hash, uintptr_t point, int* const err_code) {
+    _LOG_FAIL_CHECK_(label_hashes, "error", ERROR_REPORTS, return, err_code, ENOENT);
+    _LOG_FAIL_CHECK_(label_values, "error", ERROR_REPORTS, return, err_code, ENOENT);
+    _LOG_FAIL_CHECK_(label_count < label_max_count, "error", ERROR_REPORTS, return, err_code, ENOMEM);
+
+    for (size_t label_id = 0; label_id < label_count; ++label_id) {
+        if (hash == label_hashes[label_id]) {
+            label_values[label_id] = point;
+            return;
+        }
+    }
+
+    label_hashes[label_count] = hash;
+    label_values[label_count] = point;
+    ++label_count;
+}
+
+uintptr_t get_label(hash_t hash, int* const err_code) {
+    _LOG_FAIL_CHECK_(label_hashes, "error", ERROR_REPORTS, return 0, err_code, ENOENT);
+    _LOG_FAIL_CHECK_(label_values, "error", ERROR_REPORTS, return 0, err_code, ENOENT);
+
+    for (size_t label_id = 0; label_id < label_count; ++label_id) {
+        if (hash == label_hashes[label_id]) return label_values[label_id];
+    }
+
+    int status = 0;
+    add_label(hash, 0, &status);
+    return status == 0 ? label_values[label_count - 1] : 0;
 }

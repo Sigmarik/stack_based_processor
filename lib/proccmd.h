@@ -16,6 +16,11 @@
 
 static const char CMD_COMMENT_CHAR = '#';
 
+static const char CMD_LABEL[] = "HERE";
+static hash_t CMD_LABEL_HASH = get_hash(CMD_LABEL, CMD_LABEL + strlen(CMD_LABEL));
+
+static const size_t LABEL_MAX_NAME_LENGTH = 128;
+
 enum CMD_LIST {
     CMD_END,        //* End program.
     CMD_PUSH,       //* Push element to the stack.
@@ -62,7 +67,7 @@ static int __cmd_hash_calculator = __cmd_calc_hashes();
 static int __cmd_calc_hashes() {
     for (int cmd_id = 0; cmd_id < (char)(sizeof(CMD_SOURCE) / sizeof(*CMD_SOURCE)); ++cmd_id) {
         const char* command = CMD_SOURCE[cmd_id];
-        CMD_HASHES[cmd_id] = get_hash(command, command + strlen(command) - 1);
+        CMD_HASHES[cmd_id] = get_hash(command, command + strlen(command));
     }
     return 0;
 }

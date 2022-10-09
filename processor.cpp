@@ -271,6 +271,9 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
         break;
         case CMD_JMP:
             shift = *(int*)(ptr + 1);
+            _LOG_FAIL_CHECK_(shift != 0, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "JMP argument was 0, terminating.\n");
+            }, err_code, EFAULT);
         break;
         case CMD_JMPG:
             _LOG_EMPT_STACK_("JMPG[top]");
@@ -278,6 +281,9 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
             _LOG_EMPT_STACK_("JMPG[bottom]");
             var_a = stack_get(stack, err_code); stack_pop(stack, err_code);
             shift = sizeof(int) + 1;
+            _LOG_FAIL_CHECK_(shift != 0, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "JMPG argument was 0, terminating.\n");
+            }, err_code, EFAULT);
             if (var_b > var_a) shift = *(int*)(ptr + 1);
         break;
         default:
