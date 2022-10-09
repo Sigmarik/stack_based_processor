@@ -14,6 +14,8 @@
 
 #include "util/dbg/debug.h"
 
+static const char CMD_COMMENT_CHAR = '#';
+
 enum CMD_LIST {
     CMD_END,        //* End program.
     CMD_PUSH,       //* Push element to the stack.

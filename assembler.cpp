@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include "lib/util/dbg/debug.h"
 #include "lib/util/argparser.h"
@@ -240,37 +241,46 @@ void put_header(FILE* output) {
 void process_line(const char* line, FILE* output, FILE* listing) {
     _LOG_FAIL_CHECK_(line,   "error", ERROR_REPORTS, return, NULL, 0);
     _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, return, NULL, 0);
+
+    char first_char = '\0';
+    sscanf(line, "%c", &first_char);
+
     int shift = 0;
     char code[10] = "";
-    sscanf(line, "%s%n", code, &shift);
     int argument = 0;
     char sequence[MAX_COMMAND_SIZE] = "";
     size_t cmd_size = 0;
-    hash_t hash = get_hash(code, code + strlen(code) - 1);
+    hash_t hash = 0;
+    
+    if (*line != '\0' && first_char != CMD_COMMENT_CHAR) {
 
-    for (int cmd_id = 0; cmd_id < (int)(sizeof(CMD_SOURCE) / sizeof(CMD_SOURCE[0])); ++cmd_id) {
-        if (hash != CMD_HASHES[cmd_id]) continue;
-        sequence[0] = (char)cmd_id;
-        cmd_size = 1;
-        break;
-    }
+        sscanf(line, "%s%n", code, &shift);
+        hash = get_hash(code, code + strlen(code) - 1);
 
-    _LOG_FAIL_CHECK_(cmd_size, "warning", WARNINGS, return, NULL, 0);
-    log_printf(STATUS_REPORTS, "status", "Command type -> 0x%0X (%s).\n", sequence[0], CMD_SOURCE[(int)sequence[0]]);
+        for (int cmd_id = 0; cmd_id < (int)(sizeof(CMD_SOURCE) / sizeof(CMD_SOURCE[0])); ++cmd_id) {
+            if (hash != CMD_HASHES[cmd_id]) continue;
+            sequence[0] = (char)cmd_id;
+            cmd_size = 1;
+            break;
+        }
 
-    // TODO: CoPyPaStA
-    if (hash == CMD_HASHES[CMD_PUSH] || hash == CMD_HASHES[CMD_JMP] || hash == CMD_HASHES[CMD_JMPG]) {
-        sscanf(line + shift, "%d", &argument);
-        *(int*)(sequence + 1) = argument;
-        cmd_size += sizeof(argument);
+        _LOG_FAIL_CHECK_(cmd_size, "warning", WARNINGS, return, NULL, 0);
+        log_printf(STATUS_REPORTS, "status", "Command type -> 0x%0X (%s).\n", sequence[0], CMD_SOURCE[(int)sequence[0]]);
+
+        // TODO: CoPyPaStA
+        if (hash == CMD_HASHES[CMD_PUSH] || hash == CMD_HASHES[CMD_JMP] || hash == CMD_HASHES[CMD_JMPG]) {
+            sscanf(line + shift, "%d", &argument);
+            *(int*)(sequence + 1) = argument;
+            cmd_size += sizeof(argument);
+        }
     }
 
     log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
     fwrite(sequence, cmd_size, 1, output);
     if (listing) {
-        fprintf(listing, "%-16s|", line);
+        fprintf(listing, "| %-36.36s  | [0x%0*lX] ", line, (int)sizeof(uintptr_t), ftell(output) - cmd_size);
         for (int id = 0; id < (int)cmd_size; ++id) {
-            fprintf(listing, " 0x%02X", sequence[id] & 0xFF);
+            fprintf(listing, " %02X", sequence[id] & 0xFF);
         }
         fputc('\n', listing);
     }
