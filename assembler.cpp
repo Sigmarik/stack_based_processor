@@ -258,7 +258,8 @@ void process_line(const char* line, FILE* output, FILE* listing) {
     _LOG_FAIL_CHECK_(cmd_size, "warning", WARNINGS, return, NULL, 0);
     log_printf(STATUS_REPORTS, "status", "Command type -> 0x%0X (%s).\n", sequence[0], CMD_SOURCE[(int)sequence[0]]);
 
-    if (hash == CMD_HASHES[CMD_PUSH]) {
+    // TODO: CoPyPaStA
+    if (hash == CMD_HASHES[CMD_PUSH] || hash == CMD_HASHES[CMD_JMP] || hash == CMD_HASHES[CMD_JMPG]) {
         sscanf(line + shift, "%d", &argument);
         *(int*)(sequence + 1) = argument;
         cmd_size += sizeof(argument);
@@ -267,7 +268,7 @@ void process_line(const char* line, FILE* output, FILE* listing) {
     log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
     fwrite(sequence, cmd_size, 1, output);
     if (listing) {
-        fprintf(listing, "\"%s\" ->", line);
+        fprintf(listing, "%-16s|", line);
         for (int id = 0; id < (int)cmd_size; ++id) {
             fprintf(listing, " 0x%02X", sequence[id] & 0xFF);
         }

@@ -25,6 +25,8 @@ enum CMD_LIST {
     CMD_DIV,        //* Divide last two elements.
     CMD_DUP,        //* Push copy of last element to the stack.
     CMD_ABORT,      //* Abort program execution.
+    CMD_JMP,        //* Jump to specified point in the program.
+    CMD_JMPG,       //* Jump to specified point in the program if last stack element is greater then the previous one.
 };
 
 //* Command as they should be written in source file.
@@ -39,6 +41,8 @@ static const char* CMD_SOURCE[] = {
     "DIV",
     "DUP",
     "ABORT",
+    "JMP",
+    "JMPG",
 };
 
 //* Command hashes.

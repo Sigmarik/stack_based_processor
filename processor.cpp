@@ -263,6 +263,17 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
             var_a = stack_get(stack, err_code);
             stack_push(stack, var_a, err_code);
         break;
+        case CMD_JMP:
+            shift = *(int*)(ptr + 1);
+        break;
+        case CMD_JMPG:
+            _LOG_EMPT_STACK_("JMPG[top]");
+            var_b = stack_get(stack, err_code); stack_pop(stack, err_code);
+            _LOG_EMPT_STACK_("JMPG[bottom]");
+            var_a = stack_get(stack, err_code); stack_pop(stack, err_code);
+            shift = sizeof(int) + 1;
+            if (var_b > var_a) shift = *(int*)(ptr + 1);
+        break;
         default:
             log_printf(ERROR_REPORTS, "error", "Unknown command 0x%0X. Terminating.\n", *ptr);
             if (err_code) *err_code = EIO;
