@@ -61,7 +61,7 @@ void stack_pop(Stack* const stack, int* const err_code) {
     _LOG_FAIL_CHECK_(!stack_status(stack), "error", ERROR_REPORTS, return, err_code, EINVAL);
     _LOG_FAIL_CHECK_(stack->size, "error", ERROR_REPORTS, return, err_code, ENXIO);
 
-    if ((stack->size - 1) * STACK_BUFFER_INCREASE * STACK_BUFFER_INCREASE < stack->capacity) {
+    if (stack->size * STACK_BUFFER_INCREASE * STACK_BUFFER_INCREASE < stack->capacity) {
         _stack_change_size(stack, stack->capacity / STACK_BUFFER_INCREASE, err_code);
     }
 

@@ -74,11 +74,12 @@ const char* get_file_name(const int argc, const char** argv);
 
 // Ignore everything less or equaly important as status reports.
 static int log_threshold = STATUS_REPORTS + 1;
-
 static const int NUMBER_OF_OWLS = 10;
+static size_t reg_size = 8;
 
-static const int NUMBER_OF_TAGS = 2;
-static const struct ActionTag LINE_TAGS[NUMBER_OF_TAGS] = {
+static int* reg = NULL;
+
+static const struct ActionTag LINE_TAGS[] = {
     {
         .name = {'O', "owl"}, 
         .action = {
@@ -86,7 +87,7 @@ static const struct ActionTag LINE_TAGS[NUMBER_OF_TAGS] = {
             .parameters_length = 0, 
             .function = print_owl, 
         },
-        .description = "prints 10 owls on the screen."
+        .description = "print 10 owls on the screen."
     },
     {
         .name = {'I', ""}, 
@@ -95,10 +96,21 @@ static const struct ActionTag LINE_TAGS[NUMBER_OF_TAGS] = {
             .parameters_length = 1, 
             .function = edit_int,
         },
-        .description = "sets log threshold to the specified number.\n"
+        .description = "set log threshold to the specified number.\n"
+                        "\tDoes not check if integer was specified."
+    },
+    {
+        .name = {'R', ""}, 
+        .action = {
+            .parameters = (void*[]) {&reg_size},
+            .parameters_length = 1, 
+            .function = edit_int,
+        },
+        .description = "set max. number of cells register can hold.\n"
                         "\tDoes not check if integer was specified."
     },
 };
+static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
 
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
@@ -106,6 +118,8 @@ int main(const int argc, const char** argv) {
     parse_args(argc, argv, NUMBER_OF_TAGS, LINE_TAGS);
     log_init("program_log.log", log_threshold, &errno);
     print_label();
+
+    reg = (int*) calloc(reg_size, sizeof(*reg));
 
     const char* file_name = get_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
@@ -156,6 +170,7 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Execution finished, cleaning allocated memory...\n");
     free(content);
+    free(reg);
     stack_destroy(&stack, &errno);
 
     if (errno) return EXIT_FAILURE;
@@ -208,7 +223,7 @@ size_t read_header(char* ptr, int* err_code) {
 
 size_t execute_command(const char* ptr, Stack* const stack, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
-    log_printf(STATUS_REPORTS, "status", "Executing command 0x%0X.\n", *ptr);
+    log_printf(STATUS_REPORTS, "status", "Executing command 0x%02X.\n", *ptr & 0xFF);
     _LOG_FAIL_CHECK_(stack_status(stack) == 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Stack status check failed.\n");
         stack_dump(stack, ERROR_REPORTS);
@@ -286,8 +301,25 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
             }, err_code, EFAULT);
             if (var_b > var_a) shift = *(int*)(ptr + 1);
         break;
+        case CMD_RGET:
+            shift = sizeof(int) + 1;
+            _LOG_FAIL_CHECK_(0 <= *(int*)(ptr + 1) && *(int*)(ptr + 1) <= (int)reg_size, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RGET, terminating.\n", *(int*)(ptr + 1));
+                shift = 0;
+            }, err_code, EFAULT);
+            stack_push(stack, reg[*(int*)(ptr + 1)], err_code);
+        break;
+        case CMD_RSET:
+            shift = sizeof(int) + 1;
+            _LOG_EMPT_STACK_("RSET");
+            _LOG_FAIL_CHECK_(0 <= *(int*)(ptr + 1) && *(int*)(ptr + 1) <= (int)reg_size, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RSET, terminating.\n", *(int*)(ptr + 1));
+                shift = 0;
+            }, err_code, EFAULT);
+            reg[*(int*)(ptr + 1)] = stack_get(stack, err_code);
+        break;
         default:
-            log_printf(ERROR_REPORTS, "error", "Unknown command 0x%0X. Terminating.\n", *ptr);
+            log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", *ptr);
             if (err_code) *err_code = EIO;
             shift = 0;
         break;

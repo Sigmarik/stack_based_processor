@@ -229,6 +229,8 @@ int main(const int argc, const char** argv) {
 
     free(buffer);
     free(lines);
+    free(label_hashes);
+    free(label_values);
 
     return EXIT_SUCCESS;
 }
@@ -326,7 +328,7 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
         log_printf(STATUS_REPORTS, "status", "Command type -> 0x%0X (%s).\n", sequence[0], CMD_SOURCE[(int)sequence[0]]);
 
         // TODO: CoPyPaStA
-        if (hash == CMD_HASHES[CMD_PUSH]) {
+        if (hash == CMD_HASHES[CMD_PUSH] || hash == CMD_HASHES[CMD_RGET] || hash == CMD_HASHES[CMD_RSET]) {
             sscanf(line + shift, "%d", &argument);
             *(int*)(sequence + 1) = argument;
             cmd_size += sizeof(argument);

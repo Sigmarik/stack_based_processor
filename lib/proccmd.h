@@ -34,6 +34,8 @@ enum CMD_LIST {
     CMD_ABORT,      //* Abort program execution.
     CMD_JMP,        //* Jump to specified point in the program.
     CMD_JMPG,       //* Jump to specified point in the program if last stack element is greater then the previous one.
+    CMD_RGET,       //* Get number from register and push it into the stack.
+    CMD_RSET,       //* Set register cell to the value of the last stack cell.
 };
 
 //* Command as they should be written in source file.
@@ -50,6 +52,8 @@ static const char* CMD_SOURCE[] = {
     "ABORT",
     "JMP",
     "JMPG",
+    "RGET",
+    "RSET",
 };
 
 //* Command hashes.
