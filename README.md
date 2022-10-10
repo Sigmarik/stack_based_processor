@@ -1,6 +1,6 @@
 # Text Sorting Program
 ## Description & Purpose
-The library (stackworks.h) implements stack data structure. The program (main.cpp) drives the library and lets user put elements to the stack, remove them from the end of the stack, see the last element of the stack and dump the stack into log file.
+Set pf programs implementing basic stack virtual processor and code assembler for it.
 ## Building
 
 Compile project (linux):
@@ -11,9 +11,13 @@ Cleanup project (linux):
 
 ...# make clean
 
-Run project (linux):
+Execute instruction file with virtual processor (linux):
 
-...# make run
+...# make run ARGS="your_file.instr"
+
+Assemble file into instruction (linux):
+
+...# make asm ARGS="your_file.txt"
 
 Clear build folders (linux):
 
@@ -23,12 +27,14 @@ Return project to its original state
 
 ...# make rm
 
+## Processor commands
+are listed in the file **LANG.md**
 ## Code of Conduct
-For information about our community goals check out **CODE_OF_CONDUCT.md**.
+For information about our community goals check **CODE_OF_CONDUCT.md**.
 ## Licensing
 Project is distributed under MIT license. More licensing information is specified in file **LICENSE**.
 ## Contributing
 We don't think anyone will be contributing to this project as it was made purely for educational purposes.
-But, if you still want to contribute, you can learn how to do so by reading file **CONTRIBUTING.md**.
+But, if you still want to contribute, you can learn how to do so by reading the file **CONTRIBUTING.md**.
 ## Contacts
 **(author)** Kudryashov Ilya - kudriashov.it@phystech.edu
