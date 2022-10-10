@@ -249,7 +249,7 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
         break;
         case CMD_OUT:
             _LOG_EMPT_STACK_("OUT");
-            printf(">>> %lld\n", stack_get(stack));
+            printf("%lld", stack_get(stack));
         break;
         case CMD_ADD:
             _LOG_EMPT_STACK_("ADD[top]");
@@ -317,6 +317,10 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
                 shift = 0;
             }, err_code, EFAULT);
             reg[*(int*)(ptr + 1)] = stack_get(stack, err_code);
+        break;
+        case CMD_OUTC:
+            _LOG_EMPT_STACK_("OUTC");
+            putc((char)stack_get(stack), stdout);
         break;
         default:
             log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", *ptr);

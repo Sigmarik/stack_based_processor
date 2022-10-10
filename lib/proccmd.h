@@ -36,6 +36,7 @@ enum CMD_LIST {
     CMD_JMPG,       //* Jump to specified point in the program if last stack element is greater then the previous one.
     CMD_RGET,       //* Get number from register and push it into the stack.
     CMD_RSET,       //* Set register cell to the value of the last stack cell.
+    CMD_OUTC,       //* Print symbol coresponding to the last element on the stack.
 };
 
 //* Command as they should be written in source file.
@@ -54,6 +55,7 @@ static const char* CMD_SOURCE[] = {
     "JMPG",
     "RGET",
     "RSET",
+    "OUTC",
 };
 
 //* Command hashes.
