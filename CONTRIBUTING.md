@@ -163,16 +163,7 @@ double some_complex_value = (number_of_bats + number_of_caves -
                                     number_of_parrots) * 3) / 
                                 (cargo_divisor + 1);
 ```
-## Project Structure
-**stackworks** - library implementing stack data structure. It is essential to define ```stack_content_t``` (type of elements that should be stored in a stack) and ```stack_content_t STACK_CONTENT_POISON``` (value that will be put into empty cells of the stack).
 
-**logger** - module that creates and manages program logs. ```log_init()``` initializes log files, ```log_close()``` closes them and ```log_printf()``` prints lines into logs with all the formating.
-
-**debug** - module for easier debugging. It contains function ```end_program()``` that is not very agile, but is used by 
-
-**argparser** - module for parsing command line arguments. Used only by **main.cpp**, but is very agile and can be helpful for any program that should read command line arguments.
-
-**utils** - module with "orphan" functions.
 ## Logger Structure
 **logger** module, when initialized through ```log_init()``` function, creates file that later would be filled with logs and defines certaint importance thrashold that would prevent less important messages (like status reports) from filling the log file. When function ```log_printf()``` is called, it receives importance level of a message to print, and, if that importance is less then logger threshold, ignores the message.
 ## Contact Information
