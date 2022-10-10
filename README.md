@@ -7,11 +7,11 @@ Compile project (linux):
 
 ...# make
 
-Cleanup project (linux):
+Clean the project (linux):
 
 ...# make clean
 
-Execute instruction file with virtual processor (linux):
+Execute an instruction file with the virtual processor (linux):
 
 ...# make run ARGS="your_file.instr"
 
@@ -19,11 +19,11 @@ Assemble file into instruction (linux):
 
 ...# make asm ARGS="your_file.txt"
 
-Clear build folders (linux):
+Remove build folders (linux):
 
 ...# make rmbld
 
-Return project to its original state
+Return project to its original state:
 
 ...# make rm
 
