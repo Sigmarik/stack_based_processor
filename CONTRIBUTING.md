@@ -156,7 +156,7 @@ struct Animal owl = {
 };
 ```
 
-If one formula is too long for one line and **can not be split into multiple formulas**, then it should be split into multiple blocks according to level of brackets.
+If one formula is too long for one line and **can not be split into multiple formulas**, then it should be split into multiple blocks according to the level of brackets.
 ```
 double some_complex_value = (number_of_bats + number_of_caves -
                                 number_of_people + (number_of_cages - 

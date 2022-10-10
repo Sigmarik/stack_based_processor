@@ -1,6 +1,6 @@
-# Text Sorting Program
+# Stack-based virtual processor
 ## Description & Purpose
-Set pf programs implementing basic stack virtual processor and code assembler for it.
+A set of programs implementing basic stack virtual processor and code assembler for it.
 ## Building
 
 Compile project (linux):
