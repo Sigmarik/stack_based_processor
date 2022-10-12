@@ -27,6 +27,8 @@
 #pragma GCC diagnostic ignored "-Wstack-protector"
 #pragma GCC diagnostic ignored "-Wcast-align"
 
+#define PROCESSOR
+
 typedef long long stack_content_t;
 stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
 #include "lib/stackworks.h"
@@ -226,6 +228,14 @@ size_t read_header(char* ptr, int* err_code) {
     }, err_code, EFAULT);                                                                   \
 } while (0)
 
+#define DEF_CMD(name, parse_script, exec_script) case CMD_##name: {exec_script;} break;
+
+#define STACK stack
+#define SHIFT shift
+#define ARG_PTR ptr + 1
+#define ERRNO err_code
+#define REG_SIZE reg_size
+
 int execute_command(const char* ptr, Stack* const stack, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
     log_printf(STATUS_REPORTS, "status", "Executing command 0x%02X.\n", *ptr & 0xFF);
@@ -234,99 +244,9 @@ int execute_command(const char* ptr, Stack* const stack, int* const err_code) {
         stack_dump(stack, ERROR_REPORTS);
         return 0;
     }, NULL, 0);
-    stack_content_t var_a = 0, var_b = 0;
     int shift = 1;
     switch (*ptr) {
-        case CMD_END: 
-            shift = 0;
-        break;
-        case CMD_ABORT:
-            shift = 0;
-            if (err_code) *err_code = EAGAIN;
-        break;
-        case CMD_PUSH:
-            shift = sizeof(int) + 1;
-            stack_push(stack, *(int*)(ptr + 1), err_code);
-        break;
-        case CMD_POP:
-            _LOG_EMPT_STACK_("POP");
-            stack_pop(stack, err_code);
-        break;
-        case CMD_OUT:
-            _LOG_EMPT_STACK_("OUT");
-            printf("%lld", stack_get(stack));
-        break;
-        case CMD_ADD:
-            _LOG_EMPT_STACK_("ADD[top]");
-            var_b = stack_get(stack, err_code); stack_pop(stack, err_code);
-            _LOG_EMPT_STACK_("ADD[bottom]");
-            var_a = stack_get(stack, err_code); stack_pop(stack, err_code);
-            stack_push(stack, var_a + var_b, err_code);
-        break;
-        case CMD_SUB:
-            _LOG_EMPT_STACK_("SUB[top]");
-            var_b = stack_get(stack, err_code); stack_pop(stack, err_code);
-            _LOG_EMPT_STACK_("SUB[bottom]");
-            var_a = stack_get(stack, err_code); stack_pop(stack, err_code);
-            stack_push(stack, var_a - var_b, err_code);
-        break;
-        case CMD_MUL:
-            _LOG_EMPT_STACK_("MUL[top]");
-            var_b = stack_get(stack, err_code); stack_pop(stack, err_code);
-            _LOG_EMPT_STACK_("MUL[bottom]");
-            var_a = stack_get(stack, err_code); stack_pop(stack, err_code);
-            stack_push(stack, var_a * var_b, err_code);
-        break;
-        case CMD_DIV:
-            _LOG_EMPT_STACK_("DIV[top]");
-            var_b = stack_get(stack, err_code); stack_pop(stack, err_code);
-            _LOG_EMPT_STACK_("DIV[bottom]");
-            var_a = stack_get(stack, err_code); stack_pop(stack, err_code);
-            stack_push(stack, var_a / var_b, err_code);
-        break;
-        case CMD_DUP:
-            _LOG_EMPT_STACK_("DUP");
-            var_a = stack_get(stack, err_code);
-            stack_push(stack, var_a, err_code);
-        break;
-        case CMD_JMP:
-            shift = *(int*)(ptr + 1);
-            _LOG_FAIL_CHECK_(shift != 0, "error", ERROR_REPORTS, {
-                log_printf(ERROR_REPORTS, "error", "JMP argument was 0, terminating.\n");
-            }, err_code, EFAULT);
-        break;
-        case CMD_JMPG:
-            _LOG_EMPT_STACK_("JMPG[top]");
-            var_b = stack_get(stack, err_code); stack_pop(stack, err_code);
-            _LOG_EMPT_STACK_("JMPG[bottom]");
-            var_a = stack_get(stack, err_code); stack_pop(stack, err_code);
-            shift = sizeof(int) + 1;
-            _LOG_FAIL_CHECK_(shift != 0, "error", ERROR_REPORTS, {
-                log_printf(ERROR_REPORTS, "error", "JMPG argument was 0, terminating.\n");
-            }, err_code, EFAULT);
-            if (var_b > var_a) shift = *(int*)(ptr + 1);
-        break;
-        case CMD_RGET:
-            shift = sizeof(int) + 1;
-            _LOG_FAIL_CHECK_(0 <= *(int*)(ptr + 1) && *(int*)(ptr + 1) <= (int)reg_size, "error", ERROR_REPORTS, {
-                log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RGET, terminating.\n", *(int*)(ptr + 1));
-                shift = 0;
-            }, err_code, EFAULT);
-            stack_push(stack, reg[*(int*)(ptr + 1)], err_code);
-        break;
-        case CMD_RSET:
-            shift = sizeof(int) + 1;
-            _LOG_EMPT_STACK_("RSET");
-            _LOG_FAIL_CHECK_(0 <= *(int*)(ptr + 1) && *(int*)(ptr + 1) <= (int)reg_size, "error", ERROR_REPORTS, {
-                log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RSET, terminating.\n", *(int*)(ptr + 1));
-                shift = 0;
-            }, err_code, EFAULT);
-            reg[*(int*)(ptr + 1)] = (int)stack_get(stack, err_code);
-        break;
-        case CMD_OUTC:
-            _LOG_EMPT_STACK_("OUTC");
-            putc((char)stack_get(stack), stdout);
-        break;
+        #include "lib/cmddef.h"
         default:
             log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", *ptr);
             if (err_code) *err_code = EIO;
@@ -335,6 +255,8 @@ int execute_command(const char* ptr, Stack* const stack, int* const err_code) {
     }
     return shift;
 }
+
+#undef DEF_CMD
 
 const char* get_file_name(const int argc, const char** argv) {
     const char* file_name = NULL;

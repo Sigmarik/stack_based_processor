@@ -21,42 +21,21 @@ static hash_t CMD_LABEL_HASH = get_hash(CMD_LABEL, CMD_LABEL + strlen(CMD_LABEL)
 
 static const size_t LABEL_MAX_NAME_LENGTH = 128;
 
+#define DEF_CMD(name, parse_script, exec_script) CMD_##name,
+
 enum CMD_LIST {
-    CMD_END,        //* End program.
-    CMD_PUSH,       //* Push element to the stack.
-    CMD_POP,        //* Remove element from the stack.
-    CMD_OUT,        //* Print element of the stack to the screen.
-    CMD_ADD,        //* Add last two elements.
-    CMD_SUB,        //* Subtract last two elements from each other.
-    CMD_MUL,        //* Multiply last two elements.
-    CMD_DIV,        //* Divide last two elements.
-    CMD_DUP,        //* Push copy of last element to the stack.
-    CMD_ABORT,      //* Abort program execution.
-    CMD_JMP,        //* Jump to specified point in the program.
-    CMD_JMPG,       //* Jump to specified point in the program if last stack element is greater then the previous one.
-    CMD_RGET,       //* Get number from register and push it into the stack.
-    CMD_RSET,       //* Set register cell to the value of the last stack cell.
-    CMD_OUTC,       //* Print symbol coresponding to the last element on the stack.
+    #include "cmddef.h"
 };
 
-//* Command as they should be written in source file.
+#undef DEF_CMD
+#define DEF_CMD(name, parse_script, exec_script) #name,
+
+//* Command as they should be written in a source file.
 static const char* CMD_SOURCE[] = {
-    "END",
-    "PUSH",
-    "POP",
-    "OUT",
-    "ADD",
-    "SUB",
-    "MUL",
-    "DIV",
-    "DUP",
-    "ABORT",
-    "JMP",
-    "JMPG",
-    "RGET",
-    "RSET",
-    "OUTC",
+    #include "cmddef.h"
 };
+
+#undef DEF_CMD
 
 //* Command hashes.
 static hash_t CMD_HASHES[sizeof(CMD_SOURCE) / sizeof(*CMD_SOURCE)];

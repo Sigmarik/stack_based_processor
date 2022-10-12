@@ -26,6 +26,8 @@
 
 #pragma GCC diagnostic ignored "-Wcast-align"
 
+#define ASSEMBLER
+
 /**
  * @brief Print a bunch of owls.
  * 
@@ -292,6 +294,17 @@ void put_header(FILE* output) {
     fseek(output, HEADER_SIZE, SEEK_SET);
 }
 
+#define DEF_CMD(name, parse_script, exec_script) \
+if (hash == CMD_HASHES[CMD_##name]) {sequence[0] = CMD_##name; ++cmd_size; parse_script;} else
+
+#define ARG_PTR (line + shift)
+#define GET_LABEL(arg) get_label(arg, err_code)
+#define CUR_ID ftell(output)
+#define BUF_WRITE(ptr, length) {memcpy(sequence + cmd_size, ptr, length); cmd_size += length;}
+#define ERRNO err_code
+
+#define if_cmd_not_defined
+
 void process_line(const char* line, FILE* output, FILE* listing, int* const err_code) {
     _LOG_FAIL_CHECK_(line,   "error", ERROR_REPORTS, return, NULL, 0);
     _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, return, NULL, 0);
@@ -301,7 +314,6 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
 
     int shift = 0;
     char code[10] = "";
-    int argument = 0;
     char sequence[MAX_COMMAND_SIZE] = "";
     size_t cmd_size = 0;
     hash_t hash = 0;
@@ -310,13 +322,6 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
 
         sscanf(line, "%s%n", code, &shift);
         hash = get_hash(code, code + strlen(code));
-
-        for (int cmd_id = 0; cmd_id < (int)(sizeof(CMD_SOURCE) / sizeof(CMD_SOURCE[0])); ++cmd_id) {
-            if (hash != CMD_HASHES[cmd_id]) continue;
-            sequence[0] = (char)cmd_id;
-            cmd_size = 1;
-            break;
-        }
 
         if (hash == CMD_LABEL_HASH) {
             char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
@@ -327,24 +332,8 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
             break;
         }
 
-        _LOG_FAIL_CHECK_(cmd_size, "warning", WARNINGS, return, err_code, ENXIO);
-        log_printf(STATUS_REPORTS, "status", "Command type -> 0x%0X (%s).\n", sequence[0], CMD_SOURCE[(int)sequence[0]]);
-
-        // TODO: CoPyPaStA
-        if (hash == CMD_HASHES[CMD_PUSH] || hash == CMD_HASHES[CMD_RGET] || hash == CMD_HASHES[CMD_RSET]) {
-            sscanf(line + shift, "%d", &argument);
-            *(int*)(sequence + 1) = argument;
-            cmd_size += sizeof(argument);
-        }
-
-        if (hash == CMD_HASHES[CMD_JMP] || hash == CMD_HASHES[CMD_JMPG]) {
-            char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
-            sscanf(line + shift, "%s", lbl_name);
-            hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-            argument = (int)get_label(lbl_hash, err_code) - (int)ftell(output);
-            *(int*)(sequence + 1) = argument;
-            cmd_size += sizeof(argument);
-        }
+        #include "lib/cmddef.h"
+        if_cmd_not_defined log_printf(ERROR_REPORTS, "error", "Unknown command %s.\n", code);
     } while (0);
 
     log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
@@ -357,6 +346,8 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
         fputc('\n', listing);
     }
 }
+
+#undef DEF_CMD
 
 static size_t label_count = 0;
 
