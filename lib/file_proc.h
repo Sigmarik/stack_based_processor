@@ -23,6 +23,6 @@
  */
 size_t flength(int fd);
 
-int parse_lines(FILE* file, char** *text, char* *buffer, int* error_code = NULL);
+size_t parse_lines(FILE* file, char** *text, char* *buffer, int* error_code = NULL);
 
 #endif

@@ -142,7 +142,7 @@ bool stack_check_canary(const stack_canary_t value);
  * @param stack
  */
 #define stack_dump(stack, importance) _stack_dump(stack, importance, __PRETTY_FUNCTION__, __LINE__, __FILE__)
-void _stack_dump(Stack* const stack, int importance, const char* function, const size_t line, const char* file);
+void _stack_dump(Stack* const stack, unsigned int importance, const char* function, const size_t line, const char* file);
 
 /**
  * @brief Change the size of the stack.

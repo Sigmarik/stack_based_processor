@@ -26,7 +26,7 @@ hash_t get_hash(const void* start, const void* end) {
     hash_t hash = 0xDEADBABEDEAD;
     for (const char* ptr = (const char*)start; ptr < (const char*)end; ++ptr) {
         hash *= 0xC0FEBABEDEAD;
-        hash += *ptr;
+        hash += (unsigned char)*ptr;
     }
     return hash;
 }

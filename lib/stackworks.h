@@ -104,7 +104,7 @@ bool stack_check_canary(const stack_canary_t value) {
     return !memcmp(value, STACK_CANARY_VALUE, sizeof(stack_canary_t));
 }
 
-void _stack_dump(Stack* const stack, int importance, const char* function, const size_t line, const char* file) {
+void _stack_dump(Stack* const stack, unsigned int importance, const char* function, const size_t line, const char* file) {
     _log_printf(importance, "dump", " ----- Stack dump in function %s of file %s (%ld): ----- \n", function, file, line);
 
     stack_report_t status = stack_status(stack);
@@ -125,22 +125,27 @@ void _stack_dump(Stack* const stack, int importance, const char* function, const
     _log_printf(importance, "dump", "\t\tBuffer       = %p\n", stack->buffer);
     _log_printf(importance, "dump", "\t\t\t[----] = \"%6s\"\n", stack->buffer);
 
-    int limit = stack->capacity < STACK_DUMP_MAX_LINES ? 
-                stack->capacity : STACK_DUMP_MAX_LINES;
-    const int STACK_BITES_PER_LINE = sizeof(stack_content_t) < STACK_DUMP_MAX_BITES ? 
-                                     sizeof(stack_content_t) : STACK_DUMP_MAX_BITES;
+    unsigned int limit = (unsigned int)stack->capacity < STACK_DUMP_MAX_LINES ? 
+                         (unsigned int)stack->capacity : STACK_DUMP_MAX_LINES;
+    const unsigned int STACK_BYTES_PER_LINE = sizeof(stack_content_t) < STACK_DUMP_MAX_BITES ? 
+                                              sizeof(stack_content_t) : STACK_DUMP_MAX_BITES;
 
-    for (int elem_id = 0; elem_id < limit; ++elem_id) {
+    for (unsigned int elem_id = 0; elem_id < limit; ++elem_id) {
         stack_content_t* elem_start = _stack_content(stack) + elem_id;
-        char biteline[STACK_BITES_PER_LINE * 9 + 1];
+        char biteline[STACK_BYTES_PER_LINE * 9 + 1];
         size_t end_index = 0;
 
-        for (int bite_id = 0; bite_id < STACK_BITES_PER_LINE; ++bite_id) {
-            end_index += sprintf(biteline + end_index, "0x%02X ", *((char*)elem_start + bite_id) & 0xff);
+        for (unsigned int bite_id = 0; bite_id < STACK_BYTES_PER_LINE; ++bite_id) {
+            int end_index_delta = 0;
+            sprintf(biteline + end_index, "0x%02X %n", 
+                    (unsigned int)(*((char*)elem_start + bite_id) & (unsigned char)0xff), &end_index_delta);
+            end_index += (size_t)end_index_delta;
         }
-        for (int bite_id = 0; bite_id < STACK_BITES_PER_LINE; ++bite_id) {
+        for (unsigned int bite_id = 0; bite_id < STACK_BYTES_PER_LINE; ++bite_id) {
             char bite = *((char*)elem_start + bite_id);
-            end_index += sprintf(biteline + end_index, "%c ", isprint(bite) ? bite : '.');
+            int end_index_delta = 0;
+            sprintf(biteline + end_index, "%c %n", isprint(bite) ? bite : '.', &end_index_delta);
+            end_index += (size_t)end_index_delta;
         }
 
         biteline[sizeof(biteline) - 1] = '\0';
@@ -161,7 +166,7 @@ void _stack_change_size(Stack* const stack, const size_t new_size, int* const er
     char* new_buffer = _stack_alloc_space(new_size, err_code);
     _LOG_FAIL_CHECK_(new_buffer, "error", ERROR_REPORTS, return, err_code, ENOMEM);
 
-    memcpy(new_buffer, stack->buffer, new_size * sizeof(stack_content_t) + ((char*)_stack_content(stack) - stack->buffer));
+    memcpy(new_buffer, stack->buffer, new_size * sizeof(stack_content_t) + (size_t)((char*)_stack_content(stack) - stack->buffer));
 
     free(stack->buffer);
     stack->buffer = new_buffer;

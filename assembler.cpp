@@ -24,6 +24,8 @@
 #include "lib/procinfo.h"
 #include "lib/proccmd.h"
 
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 /**
  * @brief Print a bunch of owls.
  * 
@@ -97,7 +99,7 @@ void add_label(hash_t hash, uintptr_t point, int* const err_code = NULL);
 uintptr_t get_label(hash_t hash, int* const err_code = NULL);
 
 // Ignore everything less or equaly important as status reports.
-static int log_threshold = STATUS_REPORTS + 1;
+static unsigned int log_threshold = STATUS_REPORTS + 1;
 static int gen_listing = 1;
 static char listing_name[1024] = "listing.txt";
 
@@ -184,7 +186,7 @@ int main(const int argc, const char** argv) {
     setvbuf(input, NULL, _IOFBF, flength(fileno(input)));
     char* buffer = NULL;
     char** lines = NULL;
-    int line_count = parse_lines(input, &lines, &buffer, &errno);
+    size_t line_count = parse_lines(input, &lines, &buffer, &errno);
 
     log_printf(STATUS_REPORTS, "status", "Opening output file %s.\n", out_name);
     FILE* output = fopen(out_name, "wb");
@@ -210,7 +212,7 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Entering first search...\n");
 
-    for (int line_id = 0; line_id < line_count; ++line_id) {
+    for (size_t line_id = 0; line_id < line_count; ++line_id) {
         log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
         process_line(lines[line_id], output, listing, &errno);
     }
@@ -222,7 +224,7 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Reseting listing file...\n");
     fseek(listing, 0, SEEK_SET);
 
-    for (int line_id = 0; line_id < line_count; ++line_id) {
+    for (size_t line_id = 0; line_id < line_count; ++line_id) {
         log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
         process_line(lines[line_id], output, listing, &errno);
     }
@@ -238,6 +240,7 @@ int main(const int argc, const char** argv) {
 // Офигенно, ничего не менять.
 // Дополнил сову, сорри.
 void print_owl(const int argc, void** argv, const char* argument) {
+    UNUSE(argc); UNUSE(argv); UNUSE(argument);
     printf("-Owl argument detected, dropping emergency supply of owls.\n");
     for (int index = 0; index < NUMBER_OF_OWLS; index++) {
         puts(R"(    A_,,,_A    )");
@@ -319,7 +322,7 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
             char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
             sscanf(line + shift, "%s", lbl_name);
             hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-            add_label(lbl_hash, ftell(output), err_code);
+            add_label(lbl_hash, (uintptr_t)ftell(output), err_code);
             log_printf(STATUS_REPORTS, "status", "Label %s was set to %0*X.\n", lbl_name, sizeof(uintptr_t), ftell(output));
             break;
         }
@@ -338,7 +341,7 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
             char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
             sscanf(line + shift, "%s", lbl_name);
             hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-            argument = get_label(lbl_hash, err_code) - ftell(output);
+            argument = (int)get_label(lbl_hash, err_code) - (int)ftell(output);
             *(int*)(sequence + 1) = argument;
             cmd_size += sizeof(argument);
         }
@@ -347,9 +350,9 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
     log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
     fwrite(sequence, cmd_size, 1, output);
     if (listing) {
-        fprintf(listing, "| %-36.36s  | [0x%0*lX] ", line, (int)sizeof(uintptr_t), ftell(output) - cmd_size);
+        fprintf(listing, "| %-36.36s  | [0x%0*lX] ", line, (int)sizeof(uintptr_t), (size_t)ftell(output) - cmd_size);
         for (int id = 0; id < (int)cmd_size; ++id) {
-            fprintf(listing, " %02X", sequence[id] & 0xFF);
+            fprintf(listing, " %02X", (unsigned int)sequence[id] & 0xFF);
         }
         fputc('\n', listing);
     }

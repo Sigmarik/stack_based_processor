@@ -12,6 +12,8 @@
 #ifndef DEBUGGING_H
 #define DEBUGGING_H
 
+#define UNUSE(var) do { (void)(var); } while (0)
+
 /* NDEBUG should be here-> */
 //#define NDEBUG
 #include <assert.h>

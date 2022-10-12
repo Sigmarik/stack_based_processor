@@ -23,8 +23,12 @@
 #include "lib/procinfo.h"
 #include "lib/proccmd.h"
 
+//* warning: stack protector not protecting function: all local arrays are less than 8 bytes long [-Wstack-protector]
+#pragma GCC diagnostic ignored "-Wstack-protector"
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 typedef long long stack_content_t;
-stack_content_t STACK_CONTENT_POISON = 0xDEADBABEC0FEBEEF;
+stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
 #include "lib/stackworks.h"
 
 static const size_t STACK_START_SIZE = 1024;
@@ -54,14 +58,14 @@ void print_label();
 size_t read_header(char* ptr, int* err_code = NULL);
 
 /**
- * @brief Execute one command and return its length.
+ * @brief Execute one command and return pointer shift.
  * 
  * @param ptr pointer to the pointer to the command
  * @param stack stack to operate on
  * @param err_code error code
  * @return size_t
  */
-size_t execute_command(const char* ptr, Stack* const stack, int* const err_code = NULL);
+int execute_command(const char* ptr, Stack* const stack, int* const err_code = NULL);
 
 /**
  * @brief Get the file name from the list of command line arguments.
@@ -73,7 +77,7 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code 
 const char* get_file_name(const int argc, const char** argv);
 
 // Ignore everything less or equaly important as status reports.
-static int log_threshold = STATUS_REPORTS + 1;
+static unsigned int log_threshold = STATUS_REPORTS + 1;
 static const int NUMBER_OF_OWLS = 10;
 static size_t reg_size = 8;
 
@@ -152,17 +156,17 @@ int main(const int argc, const char** argv) {
     }, NULL, 0);
     
     log_printf(STATUS_REPORTS, "status", "Reading file header...\n");
-    int prefix_shift = read_header(pointer, &errno);
+    size_t prefix_shift = read_header(pointer, &errno);
     pointer += prefix_shift;
     _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, { free(content); return EXIT_FAILURE; }, NULL, 0);
 
     log_printf(STATUS_REPORTS, "status", "Starting executing commands...\n");
-    size_t delta = 0;
+    int delta = 0;
     while ((delta = execute_command(pointer, &stack, &errno)) != 0) {
         char* prev_ptr = pointer;
         pointer += delta;
-        _LOG_FAIL_CHECK_(pointer > content, "error", ERROR_REPORTS, {
-            log_printf(ERROR_REPORTS, "error", "Negative pointer value of 0x%0*X after executing command at 0x%0*X. Terminating.\n", 
+        _LOG_FAIL_CHECK_(pointer > content && pointer < content + size, "error", ERROR_REPORTS, {
+            log_printf(ERROR_REPORTS, "error", "Invalid pointer value of 0x%0*X after executing command at 0x%0*X. Terminating.\n", 
                                                 sizeof(uintptr_t), pointer - content, sizeof(uintptr_t), prev_ptr - content);
             return EXIT_FAILURE;
         }, &errno, EFAULT);
@@ -180,6 +184,7 @@ int main(const int argc, const char** argv) {
 // Офигенно, ничего не менять.
 // Дополнил сову, сорри.
 void print_owl(const int argc, void** argv, const char* argument) {
+    UNUSE(argc); UNUSE(argv); UNUSE(argument);
     printf("-Owl argument detected, dropping emergency supply of owls.\n");
     for (int index = 0; index < NUMBER_OF_OWLS; index++) {
         puts(R"(    A_,,,_A    )");
@@ -221,7 +226,7 @@ size_t read_header(char* ptr, int* err_code) {
     }, err_code, EFAULT);                                                                   \
 } while (0)
 
-size_t execute_command(const char* ptr, Stack* const stack, int* const err_code) {
+int execute_command(const char* ptr, Stack* const stack, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
     log_printf(STATUS_REPORTS, "status", "Executing command 0x%02X.\n", *ptr & 0xFF);
     _LOG_FAIL_CHECK_(stack_status(stack) == 0, "error", ERROR_REPORTS, {
@@ -229,7 +234,7 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
         stack_dump(stack, ERROR_REPORTS);
         return 0;
     }, NULL, 0);
-    int var_a = 0, var_b = 0;
+    stack_content_t var_a = 0, var_b = 0;
     int shift = 1;
     switch (*ptr) {
         case CMD_END: 
@@ -316,7 +321,7 @@ size_t execute_command(const char* ptr, Stack* const stack, int* const err_code)
                 log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RSET, terminating.\n", *(int*)(ptr + 1));
                 shift = 0;
             }, err_code, EFAULT);
-            reg[*(int*)(ptr + 1)] = stack_get(stack, err_code);
+            reg[*(int*)(ptr + 1)] = (int)stack_get(stack, err_code);
         break;
         case CMD_OUTC:
             _LOG_EMPT_STACK_("OUTC");
