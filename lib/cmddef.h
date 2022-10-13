@@ -30,8 +30,14 @@
     #ifndef STACK
         #error STACK was not defined while trying to access execution code.
     #endif
+    #ifndef ADDR_STACK
+        #error ADDR_STACK was not defined while trying to access execution code.
+    #endif
     #ifndef SHIFT
         #error SHIFT was not defined while trying to access execution code.
+    #endif
+    #ifndef EXEC_POINT
+        #error EXEC_POINT was not defined while trying to access execution code.
     #endif
     #ifndef ARG_PTR
         #error ARG_PTR was not defined while trying to access execution code.
@@ -180,4 +186,32 @@ DEF_CMD(RSET, {
 DEF_CMD(OUTC, {}, {
     _LOG_EMPT_STACK_("OUT");
     putc((int)stack_get(STACK, ERRNO), stdout);
+})
+
+DEF_CMD(CALL, {
+    char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
+    sscanf(ARG_PTR, "%s", lbl_name);
+    hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+    int argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+    BUF_WRITE(&argument, sizeof(argument));
+}, {
+    int dest = 0;
+    memcpy(&dest, ARG_PTR, sizeof(dest));
+    SHIFT += (int)sizeof(dest);
+    stack_push(ADDR_STACK, (stack_content_t)EXEC_POINT + SHIFT, ERRNO);
+    SHIFT = dest;
+    _LOG_FAIL_CHECK_(SHIFT != 0, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "CALL argument was 0, terminating.\n");
+    }, ERRNO, EFAULT);
+})
+
+DEF_CMD(RET, {}, {
+    _LOG_FAIL_CHECK_(ADDR_STACK->size, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Address stack was zero when RET was called, terminating.");
+        shift = 0;
+        break;
+    }, ERRNO, EFAULT);
+    uintptr_t dest = (uintptr_t) stack_get(ADDR_STACK, ERRNO);
+    stack_pop(ADDR_STACK, ERRNO);
+    SHIFT = (int)(dest - (uintptr_t)EXEC_POINT);
 })

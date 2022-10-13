@@ -34,6 +34,7 @@ stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
 #include "lib/stackworks.h"
 
 static const size_t STACK_START_SIZE = 1024;
+static const size_t ADDR_STACK_START_SIZE = 16;
 
 /**
  * @brief Print a bunch of owls.
@@ -64,10 +65,11 @@ size_t read_header(char* ptr, int* err_code = NULL);
  * 
  * @param ptr pointer to the pointer to the command
  * @param stack stack to operate on
+ * @param addr_stack address stack
  * @param err_code error code
  * @return size_t
  */
-int execute_command(const char* ptr, Stack* const stack, int* const err_code = NULL);
+int execute_command(const char* prog_start, const char* ptr, Stack* const stack, Stack* const addr_stack, int* const err_code = NULL);
 
 /**
  * @brief Get the file name from the list of command line arguments.
@@ -151,9 +153,15 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Initializing stack...\n");
     Stack stack = {};
+    Stack addr_stack = {};
     stack_init(&stack, STACK_START_SIZE, &errno);
     _LOG_FAIL_CHECK_(!stack_status(&stack), "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Failed to initialize stack.\n");
+        log_printf(ERROR_REPORTS, "error", "Failed to initialize main stack.\n");
+        stack_dump(&stack, ERROR_REPORTS);
+    }, NULL, 0);
+    stack_init(&addr_stack, ADDR_STACK_START_SIZE, &errno);
+    _LOG_FAIL_CHECK_(!stack_status(&stack), "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Failed to initialize addr stack.\n");
         stack_dump(&stack, ERROR_REPORTS);
     }, NULL, 0);
     
@@ -164,7 +172,7 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Starting executing commands...\n");
     int delta = 0;
-    while ((delta = execute_command(pointer, &stack, &errno)) != 0) {
+    while ((delta = execute_command(content, pointer, &stack, &addr_stack, &errno)) != 0) {
         char* prev_ptr = pointer;
         pointer += delta;
         _LOG_FAIL_CHECK_(pointer > content && pointer < content + size, "error", ERROR_REPORTS, {
@@ -178,6 +186,7 @@ int main(const int argc, const char** argv) {
     free(content);
     free(reg);
     stack_destroy(&stack, &errno);
+    stack_destroy(&addr_stack, &errno);
 
     if (errno) return EXIT_FAILURE;
     return EXIT_SUCCESS;
@@ -231,17 +240,25 @@ size_t read_header(char* ptr, int* err_code) {
 #define DEF_CMD(name, parse_script, exec_script) case CMD_##name: {exec_script;} break;
 
 #define STACK stack
+#define ADDR_STACK addr_stack
 #define SHIFT shift
+#define EXEC_POINT ptr
 #define ARG_PTR ptr + 1
 #define ERRNO err_code
 #define REG_SIZE reg_size
 
-int execute_command(const char* ptr, Stack* const stack, int* const err_code) {
+int execute_command(const char* prog_start, const char* ptr, Stack* const stack, Stack* const addr_stack, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
-    log_printf(STATUS_REPORTS, "status", "Executing command 0x%02X.\n", *ptr & 0xFF);
+    log_printf(STATUS_REPORTS, "status", "Executing command %02X at 0x%0*X.\n", 
+               *ptr & 0xFF, sizeof(prog_start), ptr - prog_start);
     _LOG_FAIL_CHECK_(stack_status(stack) == 0, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Stack status check failed.\n");
+        log_printf(ERROR_REPORTS, "error", "Memory stack status check failed.\n");
         stack_dump(stack, ERROR_REPORTS);
+        return 0;
+    }, NULL, 0);
+    _LOG_FAIL_CHECK_(stack_status(addr_stack) == 0, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Address stack status check failed.\n");
+        stack_dump(addr_stack, ERROR_REPORTS);
         return 0;
     }, NULL, 0);
     int shift = 1;

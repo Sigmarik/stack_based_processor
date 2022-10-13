@@ -47,7 +47,7 @@ void stack_push(Stack* const stack, const stack_content_t value, int* const err_
     _LOG_FAIL_CHECK_(!stack_status(stack), "error", ERROR_REPORTS, return, err_code, EINVAL);
 
     if (stack->capacity < stack->size + 1) {
-        _stack_change_size(stack, stack->capacity * STACK_BUFFER_INCREASE, err_code);
+        _stack_change_size(stack, stack->capacity * STACK_BUFFER_INCREASE + 1, err_code);
     }
 
     _stack_content(stack)[stack->size] = value;
@@ -62,7 +62,7 @@ void stack_pop(Stack* const stack, int* const err_code) {
     _LOG_FAIL_CHECK_(stack->size, "error", ERROR_REPORTS, return, err_code, ENXIO);
 
     if (stack->size * STACK_BUFFER_INCREASE * STACK_BUFFER_INCREASE < stack->capacity) {
-        _stack_change_size(stack, stack->capacity / STACK_BUFFER_INCREASE, err_code);
+        _stack_change_size(stack, stack->capacity / STACK_BUFFER_INCREASE + 1, err_code);
     }
 
     _stack_content(stack)[stack->size - 1] = STACK_CONTENT_POISON;
@@ -166,7 +166,9 @@ void _stack_change_size(Stack* const stack, const size_t new_size, int* const er
     char* new_buffer = _stack_alloc_space(new_size, err_code);
     _LOG_FAIL_CHECK_(new_buffer, "error", ERROR_REPORTS, return, err_code, ENOMEM);
 
-    memcpy(new_buffer, stack->buffer, new_size * sizeof(stack_content_t) + (size_t)((char*)_stack_content(stack) - stack->buffer));
+    size_t cpy_size = new_size < stack->size ?
+                      new_size : stack->size;
+    memcpy(new_buffer, stack->buffer, cpy_size * sizeof(stack_content_t) + (size_t)((char*)_stack_content(stack) - stack->buffer));
 
     free(stack->buffer);
     stack->buffer = new_buffer;
