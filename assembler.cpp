@@ -170,6 +170,8 @@ int main(const int argc, const char** argv) {
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("Input file was not specified, terminating...\n");
         printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
+        free(label_hashes);
+        free(label_values);
         return EXIT_FAILURE;
     }, NULL, 0);
 
@@ -183,17 +185,22 @@ int main(const int argc, const char** argv) {
     FILE* input = fopen(file_name, "r");
     _LOG_FAIL_CHECK_(input, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to open input file \"%s\", terminating...\n", file_name);
+        free(label_hashes);
+        free(label_values);
         return EXIT_FAILURE;
     }, NULL, 0);
     setvbuf(input, NULL, _IOFBF, flength(fileno(input)));
     char* buffer = NULL;
     char** lines = NULL;
     size_t line_count = parse_lines(input, &lines, &buffer, &errno);
+    fclose(input);
 
     log_printf(STATUS_REPORTS, "status", "Opening output file %s.\n", out_name);
     FILE* output = fopen(out_name, "wb");
     _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to create/open output file \"%s\", terminating...\n", out_name);
+        free(label_hashes);
+        free(label_values);
         return EXIT_FAILURE;
     }, NULL, 0);
 
@@ -235,6 +242,7 @@ int main(const int argc, const char** argv) {
     free(lines);
     free(label_hashes);
     free(label_values);
+    fclose(output);
 
     return EXIT_SUCCESS;
 }

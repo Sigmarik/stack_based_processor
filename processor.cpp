@@ -127,12 +127,14 @@ int main(const int argc, const char** argv) {
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
+    // TODO: Create allocation table to systematically free() each allocated address.
     reg = (int*) calloc(reg_size, sizeof(*reg));
 
     const char* file_name = get_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
         printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
+        free(reg);
         return EXIT_FAILURE;
     }, NULL, 0);
 
@@ -140,6 +142,7 @@ int main(const int argc, const char** argv) {
     int fd = open(file_name, O_RDONLY);
     _LOG_FAIL_CHECK_(fd != -1, "error", ERROR_REPORTS, {
         printf("File was not opened, terminating...\n");
+        free(reg);
         return EXIT_FAILURE;
     }, NULL, 0);
     size_t size = flength(fd);
@@ -168,7 +171,13 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Reading file header...\n");
     size_t prefix_shift = read_header(pointer, &errno);
     pointer += prefix_shift;
-    _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, { free(content); return EXIT_FAILURE; }, NULL, 0);
+    _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, {
+        free(content);
+        free(reg);
+        stack_destroy(&stack, &errno);
+        stack_destroy(&addr_stack, &errno);
+        return EXIT_FAILURE;
+    }, NULL, 0);
 
     log_printf(STATUS_REPORTS, "status", "Starting executing commands...\n");
     int delta = 0;
@@ -178,6 +187,10 @@ int main(const int argc, const char** argv) {
         _LOG_FAIL_CHECK_(pointer > content && pointer < content + size, "error", ERROR_REPORTS, {
             log_printf(ERROR_REPORTS, "error", "Invalid pointer value of 0x%0*X after executing command at 0x%0*X. Terminating.\n", 
                                                 sizeof(uintptr_t), pointer - content, sizeof(uintptr_t), prev_ptr - content);
+            free(content);
+            free(reg);
+            stack_destroy(&stack, &errno);
+            stack_destroy(&addr_stack, &errno);
             return EXIT_FAILURE;
         }, &errno, EFAULT);
     }
