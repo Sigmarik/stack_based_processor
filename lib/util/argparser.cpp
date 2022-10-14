@@ -41,11 +41,11 @@ void parse_args(const int argc, const char** argv, const int action_c, const str
 
         if (strcmp(arg, "--help") == 0 || strcmp(arg, "-help") == 0 || strcmp(arg, "-h") == 0 || strcmp(arg, "-H") == 0) {
             printf("Valid tags:\n\n");
-            printf("-H -h -help --help - prints this message.\n\n");
+            printf("-H -h -help --help - print this message.\n\n");
             for (int tag_id = 0; tag_id < action_c; tag_id++) {
                 print_description(actions[tag_id]);
             }
-            //* Any program should stop when user only wants to know his options.
+            //* Any program should stop if user only wants to know his options.
             exit(EXIT_SUCCESS);
         }
     }

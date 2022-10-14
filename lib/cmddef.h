@@ -50,13 +50,21 @@
     #endif
 #endif
 
-DEF_CMD(END,   {}, {
+DEF_CMD(END, {}, {
     SHIFT = 0;
 })
 
 DEF_CMD(PUSH, {
     int arg = 0;
-    sscanf(ARG_PTR, "%d", &arg);
+    char arg_first_char = 0;
+    sscanf(ARG_PTR, " %c", &arg_first_char);
+    if (arg_first_char == '\'') {
+        sscanf(ARG_PTR, " \'%c\'", (char*)&arg);
+        log_printf(STATUS_REPORTS, "status", "Character %c (%02X) was detected.\n", (char)arg, (char)arg);
+    } else {
+        sscanf(ARG_PTR, "%d", &arg);
+        log_printf(STATUS_REPORTS, "status", "Number %d was detected.\n", arg);
+    }
     BUF_WRITE(&arg, sizeof(arg));
 }, {
     int arg = 0;
