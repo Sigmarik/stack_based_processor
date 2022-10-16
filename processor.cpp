@@ -80,6 +80,26 @@ int execute_command(const char* prog_start, const char* ptr, Stack* const stack,
  */
 const char* get_file_name(const int argc, const char** argv);
 
+/**
+ * @brief Make console empty.
+ * 
+ */
+void clear_console();
+
+/**
+ * @brief Draw picture stored in VMD to the screen with UTF8 characters.
+ * 
+ */
+void draw_vmd();
+
+static const char PIX_STATES[] = R"($@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,"^`'. )";
+
+static size_t ram_size = 1024;
+static size_t screen_width = 32;
+static size_t screen_height = 32;
+static int* ram = NULL;
+static int* vmd = NULL;
+
 // Ignore everything less or equaly important as status reports.
 static unsigned int log_threshold = STATUS_REPORTS + 1;
 static const int NUMBER_OF_OWLS = 10;
@@ -117,6 +137,36 @@ static const struct ActionTag LINE_TAGS[] = {
         .description = "set max. number of cells register can hold.\n"
                         "\tDoes not check if integer was specified."
     },
+    {
+        .name = {'R', ""}, 
+        .action = {
+            .parameters = (void*[]) {&ram_size},
+            .parameters_length = 1, 
+            .function = edit_int,
+        },
+        .description = "set RAM size in cells.\n"
+                        "\tDoes not check if integer was specified."
+    },
+    {
+        .name = {'W', ""}, 
+        .action = {
+            .parameters = (void*[]) {&screen_width},
+            .parameters_length = 1, 
+            .function = edit_int,
+        },
+        .description = "set text screen width.\n"
+                        "\tDoes not check if integer was specified."
+    },
+    {
+        .name = {'H', ""}, 
+        .action = {
+            .parameters = (void*[]) {&screen_height},
+            .parameters_length = 1, 
+            .function = edit_int,
+        },
+        .description = "set text screen height.\n"
+                        "\tDoes not check if integer was specified."
+    },
 };
 static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
 
@@ -129,12 +179,23 @@ int main(const int argc, const char** argv) {
 
     // TODO: Create allocation table to systematically free() each allocated address.
     reg = (int*) calloc(reg_size, sizeof(*reg));
-
+    ram = (int*) calloc(ram_size, sizeof(*ram));
+    vmd = (int*) calloc(screen_width * screen_height, sizeof(*vmd));
+    _LOG_FAIL_CHECK_(reg, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
+    _LOG_FAIL_CHECK_(ram, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
+    _LOG_FAIL_CHECK_(vmd, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
+    if (ram_size > 0) ram[0] = (int)ram_size;
+    if (ram_size > 1) ram[1] = (int)screen_width;
+    if (ram_size > 2) ram[2] = (int)screen_height;
+    if (ram_size > 3) ram[3] = (int)sizeof(PIX_STATES);
+    
     const char* file_name = get_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
         printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
         free(reg);
+        free(ram);
+        free(vmd);
         return EXIT_FAILURE;
     }, NULL, 0);
 
@@ -143,6 +204,8 @@ int main(const int argc, const char** argv) {
     _LOG_FAIL_CHECK_(fd != -1, "error", ERROR_REPORTS, {
         printf("File was not opened, terminating...\n");
         free(reg);
+        free(ram);
+        free(vmd);
         return EXIT_FAILURE;
     }, NULL, 0);
     size_t size = flength(fd);
@@ -174,6 +237,8 @@ int main(const int argc, const char** argv) {
     _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, {
         free(content);
         free(reg);
+        free(ram);
+        free(vmd);
         stack_destroy(&stack, &errno);
         stack_destroy(&addr_stack, &errno);
         return EXIT_FAILURE;
@@ -189,6 +254,8 @@ int main(const int argc, const char** argv) {
                                                 sizeof(uintptr_t), pointer - content, sizeof(uintptr_t), prev_ptr - content);
             free(content);
             free(reg);
+            free(ram);
+            free(vmd);
             stack_destroy(&stack, &errno);
             stack_destroy(&addr_stack, &errno);
             return EXIT_FAILURE;
@@ -198,6 +265,8 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Execution finished, cleaning allocated memory...\n");
     free(content);
     free(reg);
+    free(ram);
+    free(vmd);
     stack_destroy(&stack, &errno);
     stack_destroy(&addr_stack, &errno);
 
@@ -259,6 +328,10 @@ size_t read_header(char* ptr, int* err_code) {
 #define ARG_PTR ptr + 1
 #define ERRNO err_code
 #define REG_SIZE reg_size
+#define RAM_SIZE ram_size
+#define RAM ram
+#define VMD_SIZE (screen_width * screen_height)
+#define VMD vmd
 
 int execute_command(const char* prog_start, const char* ptr, Stack* const stack, Stack* const addr_stack, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
@@ -297,4 +370,26 @@ const char* get_file_name(const int argc, const char** argv) {
     }
 
     return file_name;
+}
+
+#ifdef __linux__
+void clear_console() {
+    system("clear");
+}
+#elif defined(WIN32) || defined(WIN64)
+void clear_console() {
+    system("cls");
+}
+#endif
+
+void draw_vmd() {
+    for (int id_y = 0; id_y < (int)screen_height; ++id_y) {
+        for (int id_x = 0; id_x < (int)screen_width; ++id_x) {
+            int brightness = vmd[id_y * (int)screen_width + id_x];
+            if (brightness < 0) brightness = 0;
+            if (brightness >= (int)sizeof(PIX_STATES)) brightness = (int)sizeof(PIX_STATES) - 1;
+            putc(PIX_STATES[brightness], stdout);
+        }
+        putc('\n', stdout);
+    }
 }

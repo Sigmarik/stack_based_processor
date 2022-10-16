@@ -48,6 +48,18 @@
     #ifndef REG_SIZE
         #error REG_SIZE was not defined while trying to access execution code.
     #endif
+    #ifndef RAM_SIZE
+        #error RAM_SIZE was not defined while trying to access execution code.
+    #endif
+    #ifndef RAM
+        #error RAM was not defined while trying to access execution code.
+    #endif
+    #ifndef VMD_SIZE
+        #error VMD_SIZE was not defined while trying to access execution code.
+    #endif
+    #ifndef VMD
+        #error VMD was not defined while trying to access execution code.
+    #endif
 #endif
 
 DEF_CMD(END, {}, {
@@ -169,7 +181,7 @@ DEF_CMD(RGET, {
     memcpy(&reg_id, ARG_PTR, sizeof(reg_id));
     SHIFT += (int)sizeof(reg_id);
     _LOG_FAIL_CHECK_(0 <= reg_id && reg_id <= (int)REG_SIZE, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RGET, terminating.\n", *(int*)(ptr + 1));
+        log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RGET, terminating.\n", reg_id);
         SHIFT = 0;
     }, ERRNO, EFAULT);
     stack_push(STACK, reg[reg_id], ERRNO);
@@ -184,7 +196,7 @@ DEF_CMD(RSET, {
     memcpy(&reg_id, ARG_PTR, sizeof(reg_id));
     SHIFT += (int)sizeof(reg_id);
     _LOG_FAIL_CHECK_(0 <= reg_id && reg_id <= (int)REG_SIZE, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RGET, terminating.\n", *(int*)(ptr + 1));
+        log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RGET, terminating.\n", reg_id);
         SHIFT = 0;
     }, ERRNO, EFAULT);
     _LOG_EMPT_STACK_("RSET");
@@ -222,4 +234,56 @@ DEF_CMD(RET, {}, {
     uintptr_t dest = (uintptr_t) stack_get(ADDR_STACK, ERRNO);
     stack_pop(ADDR_STACK, ERRNO);
     SHIFT = (int)(dest - (uintptr_t)EXEC_POINT);
+})
+
+DEF_CMD(MSET, {}, {
+    _LOG_EMPT_STACK_("MSET[key]");
+    int key = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+    _LOG_EMPT_STACK_("MSET[value]");
+    int value = (int)stack_get(STACK, ERRNO);
+    _LOG_FAIL_CHECK_(0 <= key && key < (int)RAM_SIZE, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in MSET at %0*X.\n", key, sizeof(void*), EXEC_POINT);
+        SHIFT = 0;
+    }, ERRNO, EFAULT);
+    RAM[key] = value;
+})
+
+DEF_CMD(MGET, {}, {
+    _LOG_EMPT_STACK_("MGET[key]");
+    int key = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+    _LOG_FAIL_CHECK_(0 <= key && key < (int)RAM_SIZE, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in MGET at %0*X.\n", key, sizeof(void*), EXEC_POINT);
+        SHIFT = 0;
+    }, ERRNO, EFAULT);
+    stack_push(STACK, RAM[key], ERRNO);
+})
+
+DEF_CMD(VSET, {}, {
+    _LOG_EMPT_STACK_("VSET[key]");
+    int key = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+    _LOG_EMPT_STACK_("VSET[value]");
+    int value = (int)stack_get(STACK, ERRNO);
+    _LOG_FAIL_CHECK_(0 <= key && key < (int)VMD_SIZE, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in MSET at %0*X.\n", key, sizeof(void*), EXEC_POINT);
+        SHIFT = 0;
+    }, ERRNO, EFAULT);
+    VMD[key] = value;
+})
+
+DEF_CMD(VGET, {}, {
+    _LOG_EMPT_STACK_("VGET[key]");
+    int key = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+    _LOG_FAIL_CHECK_(0 <= key && key < (int)VMD_SIZE, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in VGET at %0*X.\n", key, sizeof(void*), EXEC_POINT);
+        SHIFT = 0;
+    }, ERRNO, EFAULT);
+    stack_push(STACK, VMD[key], ERRNO);
+})
+
+DEF_CMD(CCLR, {}, {
+    clear_console(); //* Defined in processor.cpp
+})
+
+DEF_CMD(DRAW, {}, {
+    draw_vmd(); //* Defined in processor.cpp
 })

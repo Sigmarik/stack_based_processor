@@ -1,0 +1,73 @@
+PUSH 0
+RSET 0
+RSET 1
+POP
+
+HERE loop_x_bgn
+PUSH 10
+OUTC
+POP
+
+PUSH 0
+RSET 1
+POP
+HERE loop_y_bgn
+PUSH '-'
+OUTC
+POP
+
+RGET 0
+RGET 1
+SUB
+
+PUSH 2
+PUSH 3
+MGET
+DIV
+ADD
+
+RGET 0
+RGET 1
+CALL byXY
+
+VSET
+
+RGET 1
+PUSH 1
+ADD
+RSET 1
+POP
+
+RGET 1
+PUSH 2
+MGET
+JMPG loop_y_bgn
+RGET 0
+PUSH 1
+ADD
+RSET 0
+POP
+
+RGET 0
+PUSH 1
+MGET
+JMPG loop_x_bgn
+
+PUSH 10
+OUTC
+POP
+
+CCLR
+DRAW
+
+
+JMP __byXY_end
+    HERE byXY
+    PUSH 1
+    MGET
+    MUL
+    ADD
+    RET
+HERE __byXY_end
+
+END
