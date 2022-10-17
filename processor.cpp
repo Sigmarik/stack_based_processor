@@ -25,7 +25,6 @@
 
 //* warning: stack protector not protecting function: all local arrays are less than 8 bytes long [-Wstack-protector]
 #pragma GCC diagnostic ignored "-Wstack-protector"
-#pragma GCC diagnostic ignored "-Wcast-align"
 
 #define PROCESSOR
 
@@ -189,7 +188,7 @@ int main(const int argc, const char** argv) {
     if (ram_size > 1) ram[1] = (int)screen_width;
     if (ram_size > 2) ram[2] = (int)screen_height;
     if (ram_size > 3) ram[3] = (int)sizeof(PIX_STATES);
-    
+
     const char* file_name = get_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
@@ -219,19 +218,22 @@ int main(const int argc, const char** argv) {
     char* pointer = content;
 
     log_printf(STATUS_REPORTS, "status", "Initializing stack...\n");
+
     Stack stack = {};
     Stack addr_stack = {};
+
     stack_init(&stack, STACK_START_SIZE, &errno);
     _LOG_FAIL_CHECK_(!stack_status(&stack), "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to initialize main stack.\n");
         stack_dump(&stack, ERROR_REPORTS);
     }, NULL, 0);
+
     stack_init(&addr_stack, ADDR_STACK_START_SIZE, &errno);
     _LOG_FAIL_CHECK_(!stack_status(&stack), "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to initialize addr stack.\n");
         stack_dump(&stack, ERROR_REPORTS);
     }, NULL, 0);
-    
+
     log_printf(STATUS_REPORTS, "status", "Reading file header...\n");
     size_t prefix_shift = read_header(pointer, &errno);
     pointer += prefix_shift;
@@ -336,27 +338,34 @@ size_t read_header(char* ptr, int* err_code) {
 
 int execute_command(const char* prog_start, const char* ptr, Stack* const stack, Stack* const addr_stack, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
+
     log_printf(STATUS_REPORTS, "status", "Executing command %02X at 0x%0*X.\n", 
                *ptr & 0xFF, sizeof(prog_start), ptr - prog_start);
+    
     _LOG_FAIL_CHECK_(stack_status(stack) == 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Memory stack status check failed.\n");
         stack_dump(stack, ERROR_REPORTS);
         return 0;
     }, NULL, 0);
+
     _LOG_FAIL_CHECK_(stack_status(addr_stack) == 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Address stack status check failed.\n");
         stack_dump(addr_stack, ERROR_REPORTS);
         return 0;
     }, NULL, 0);
+
     int shift = 1;
+
     switch (*ptr) {
         #include "lib/cmddef.h"
+
         default:
             log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", *ptr);
             if (err_code) *err_code = EIO;
             shift = 0;
         break;
     }
+
     return shift;
 }
 
@@ -386,9 +395,12 @@ void clear_console() {
 void draw_vmd() {
     for (int id_y = 0; id_y < (int)screen_height; ++id_y) {
         for (int id_x = 0; id_x < (int)screen_width; ++id_x) {
+
             int brightness = vmd[id_y * (int)screen_width + id_x];
+
             if (brightness < 0) brightness = 0;
             if (brightness >= (int)sizeof(PIX_STATES)) brightness = (int)sizeof(PIX_STATES) - 1;
+
             putc(PIX_STATES[brightness], stdout);
         }
         putc('\n', stdout);
