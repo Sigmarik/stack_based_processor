@@ -3,19 +3,19 @@ RSET 0
 POP
 
 HERE loop_bgn
-RGET 0
-DUP
-MUL
-OUT
-POP
-PUSH 10
-OUTC
-POP
-RGET 0
-PUSH 1
-ADD
-RSET 0
-PUSH 11
+    RGET 0
+    DUP
+    MUL
+    OUT
+    POP
+    PUSH 10
+    OUTC
+    POP
+    RGET 0
+    PUSH 1
+    ADD
+    RSET 0
+    PUSH 11
 JMPG loop_bgn
 
 # Factorize 7 and print it.
@@ -50,22 +50,20 @@ POP
 
 JMP __factor_afterdef__
 HERE factor
+    # return if argument is equal to one
+    DUP
+    PUSH 2
+    JMPG __factor_return__
 
-# return if argument is equal to zero
-DUP
-PUSH 2
-JMPG __factor_return__
-
-DUP
-PUSH -1
-ADD
-CALL factor
-MUL
-JMP __factor_return__
-
+    DUP
+    PUSH -1
+    ADD
+    CALL factor
+    MUL
+    JMP __factor_return__
 JMP __factor_afterdef__
 HERE __factor_return__
-RET
+    RET
 HERE __factor_afterdef__
 
 HERE end
