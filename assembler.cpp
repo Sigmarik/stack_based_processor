@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @author Ilya Kudryashov (kudriashov.it@phystech.edu)
- * @brief Program for reading text file and sorting its lines.
+ * @brief Program for translating human-readable lines of text into processor commands (assembler).
  * @version 0.1
  * @date 2022-08-26
  * 

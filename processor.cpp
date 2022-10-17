@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @author Ilya Kudryashov (kudriashov.it@phystech.edu)
- * @brief Program for reading text file and sorting its lines.
+ * @brief Program for executing commands from binary file (virtual processor).
  * @version 0.1
  * @date 2022-08-26
  * 
@@ -168,6 +168,7 @@ static const struct ActionTag LINE_TAGS[] = {
                         "\tDoes not check if integer was specified."
     },
 };
+
 static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
 
 int main(const int argc, const char** argv) {
