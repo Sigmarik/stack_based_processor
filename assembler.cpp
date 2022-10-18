@@ -67,6 +67,20 @@ const char* get_output_file_name(const int argc, const char** argv);
 void put_header(FILE* output);
 
 /**
+ * @brief Binary buffer with its size.
+ * 
+ * @param content storage content of the p-file
+ * @param size number of filled bytes
+ */
+struct PseudoFile {
+    char* content = NULL;
+    size_t size = 0;
+} output_content;
+
+//* Output file size.
+size_t out_size = 0xFFFF;
+
+/**
  * @brief Read all lines of text and write their interpretation to file.
  * 
  *
@@ -76,7 +90,7 @@ void put_header(FILE* output);
  * @param line_count number of lines in text
  * @param err_code variable to use as errno
  */
-void assemble(FILE* output, FILE* listing, const char** lines, size_t line_count, int* err_code = NULL);
+void assemble(FILE* listing, char** lines, size_t line_count, int* err_code = NULL);
 
 /**
  * @brief Read one line of text and put it into binary file.
@@ -86,7 +100,7 @@ void assemble(FILE* output, FILE* listing, const char** lines, size_t line_count
  * @param listing output listing file
  * @param err_code variable to use as errno
  */
-void process_line(const char* line, FILE* output, FILE* listing = NULL, int* const err_code = NULL);
+void process_line(const char* line, FILE* listing = NULL, int* const err_code = NULL);
 
 //* Maximum number of labels.
 static size_t label_max_count = 1024;
@@ -174,6 +188,16 @@ static const struct ActionTag LINE_TAGS[] = {
         .description = "set maximum number of labels.\n"
                         "\tDoes not check if integer was specified."
     },
+    {
+        .name = {'F', ""}, 
+        .action = {
+            .parameters = (void*[]) {&out_size},
+            .parameters_length = 1, 
+            .function = edit_int,
+        },
+        .description = "set maximum output file size.\n"
+                        "\tDoes not check if integer was specified."
+    },
 };
 static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
 
@@ -188,6 +212,9 @@ int main(const int argc, const char** argv) {
 
     labels = (CodeLabel*) calloc(label_max_count, sizeof(*labels));
     _LOG_FAIL_CHECK_(labels, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
+
+    output_content.content = (char*) calloc(out_size, sizeof(char));
+    _LOG_FAIL_CHECK_(output_content.content, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
 
     const char* file_name = get_input_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
@@ -236,21 +263,22 @@ int main(const int argc, const char** argv) {
         log_printf(STATUS_REPORTS, "status", "Listing files were disabled.\n");
     }
 
-    log_printf(STATUS_REPORTS, "status", "Writing header to the output file.\n");
-    put_header(output);
-
     log_printf(STATUS_REPORTS, "status", "Entering first pass...\n");
 
-    assemble(output, listing, lines, line_count, &errno);
+    assemble(listing, lines, line_count, &errno);
 
     log_printf(STATUS_REPORTS, "status", "Entering final pass...\n");
-    log_printf(STATUS_REPORTS, "status", "Resetting output file...\n");
-    fseek(output, 0, SEEK_SET);
-    put_header(output);
     log_printf(STATUS_REPORTS, "status", "Resetting listing file...\n");
     fseek(listing, 0, SEEK_SET);
 
-    assemble(output, listing, lines, line_count, &errno);
+    output_content.size = 0;
+
+    assemble(listing, lines, line_count, &errno);
+
+    log_printf(STATUS_REPORTS, "status", "Writing header to the output file.\n");
+    put_header(output);
+    log_printf(STATUS_REPORTS, "status", "Writing content to the file.\n");
+    fwrite(output_content.content, sizeof(char), output_content.size, output);
 
     free(buffer);
     free(lines);
@@ -315,10 +343,11 @@ void put_header(FILE* output) {
     fseek(output, HEADER_SIZE, SEEK_SET);
 }
 
-void assemble(FILE* output, FILE* listing, const char** lines, size_t line_count, int* err_code) {
+void assemble(FILE* listing, char** lines, size_t line_count, int* err_code) {
+    _LOG_FAIL_CHECK_(output_content.content, "error", ERROR_REPORTS, return, err_code, ENOENT);
     for (size_t line_id = 0; line_id < line_count; ++line_id) {
         log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
-        process_line(lines[line_id], output, listing, &errno);
+        process_line(lines[line_id], listing, &errno);
     }
 }
 
@@ -327,16 +356,15 @@ if (hash == CMD_HASHES[CMD_##name]) {sequence[0] = (CMD_##name << 2); ++cmd_size
 
 #define ARG_PTR (line + shift)
 #define GET_LABEL(arg) get_label(arg, err_code)
-#define CUR_ID ftell(output)
+#define CUR_ID (output_content.size + HEADER_SIZE)
 #define BUF_PTR sequence
 #define BUF_WRITE(ptr, length) {memcpy(sequence + cmd_size, ptr, length); cmd_size += length;}
 #define ERRNO err_code
 
 #define if_cmd_not_defined
 
-void process_line(const char* line, FILE* output, FILE* listing, int* const err_code) {
+void process_line(const char* line, FILE* listing, int* const err_code) {
     _LOG_FAIL_CHECK_(line,   "error", ERROR_REPORTS, return, NULL, 0);
-    _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, return, NULL, 0);
 
     char first_char = '\0';
     sscanf(line, "%c", &first_char);
@@ -356,8 +384,8 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
             char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
             sscanf(line + shift, "%s", lbl_name);
             hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-            add_label(lbl_hash, (uintptr_t)ftell(output), err_code);
-            log_printf(STATUS_REPORTS, "status", "Label %s was set to %0*X.\n", lbl_name, sizeof(uintptr_t), ftell(output));
+            add_label(lbl_hash, output_content.size + HEADER_SIZE, err_code);
+            log_printf(STATUS_REPORTS, "status", "Label %s was set to %0*X.\n", lbl_name, sizeof(uintptr_t), output_content.size);
             break;
         }
 
@@ -366,9 +394,10 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
     } while (0);
 
     log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
-    fwrite(sequence, cmd_size, 1, output);
+    memcpy(output_content.content + output_content.size, sequence, cmd_size);
+    output_content.size += cmd_size;
     if (listing) {
-        fprintf(listing, "| %-36.36s  | [0x%0*lX] ", line, (int)sizeof(uintptr_t), (size_t)ftell(output) - cmd_size);
+        fprintf(listing, "| %-36.36s  | [0x%0*lX] ", line, (int)sizeof(uintptr_t), output_content.size - cmd_size + HEADER_SIZE);
         for (int id = 0; id < (int)cmd_size; ++id) {
             fprintf(listing, " %02X", (unsigned int)sequence[id] & 0xFF);
         }
