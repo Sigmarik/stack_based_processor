@@ -67,6 +67,18 @@ const char* get_output_file_name(const int argc, const char** argv);
 void put_header(FILE* output);
 
 /**
+ * @brief Read all lines of text and write their interpretation to file.
+ * 
+ *
+ * @param output file to write the result to
+ * @param listing listing file
+ * @param lines array of lines of text
+ * @param line_count number of lines in text
+ * @param err_code variable to use as errno
+ */
+void assemble(FILE* output, FILE* listing, const char** lines, size_t line_count, int* err_code = NULL);
+
+/**
  * @brief Read one line of text and put it into binary file.
  * 
  * @param line command to process
@@ -76,9 +88,24 @@ void put_header(FILE* output);
  */
 void process_line(const char* line, FILE* output, FILE* listing = NULL, int* const err_code = NULL);
 
+//* Maximum number of labels.
 static size_t label_max_count = 1024;
-static hash_t* label_hashes = NULL;
-static uintptr_t* label_values = NULL;
+
+/**
+ * @brief JMP destination, marked in code with HERE word.
+ * 
+ * @param hash label name hash
+ * @param point label jump dastination
+ * @param name (unused) label name
+ */
+struct CodeLabel {
+    hash_t hash = 0;
+    uintptr_t point = 0;
+    const char* name = NULL;
+};
+
+//* Set of defined labels.
+static CodeLabel* labels = NULL;
 
 /**
  * @brief Add label to label table.
@@ -159,17 +186,14 @@ int main(const int argc, const char** argv) {
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
-    label_hashes = (hash_t*)   calloc(label_max_count, sizeof(*label_hashes));
-    label_values = (uintptr_t*)calloc(label_max_count, sizeof(*label_values));
-    _LOG_FAIL_CHECK_(label_hashes, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
-    _LOG_FAIL_CHECK_(label_values, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
+    labels = (CodeLabel*) calloc(label_max_count, sizeof(*labels));
+    _LOG_FAIL_CHECK_(labels, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
 
     const char* file_name = get_input_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("Input file was not specified, terminating...\n");
         printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
-        free(label_hashes);
-        free(label_values);
+        free(labels);
         return EXIT_FAILURE;
     }, NULL, 0);
 
@@ -183,8 +207,7 @@ int main(const int argc, const char** argv) {
     FILE* input = fopen(file_name, "r");
     _LOG_FAIL_CHECK_(input, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to open input file \"%s\", terminating...\n", file_name);
-        free(label_hashes);
-        free(label_values);
+        free(labels);
         return EXIT_FAILURE;
     }, NULL, 0);
     setvbuf(input, NULL, _IOFBF, flength(fileno(input)));
@@ -197,8 +220,7 @@ int main(const int argc, const char** argv) {
     FILE* output = fopen(out_name, "wb");
     _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to create/open output file \"%s\", terminating...\n", out_name);
-        free(label_hashes);
-        free(label_values);
+        free(labels);
         return EXIT_FAILURE;
     }, NULL, 0);
 
@@ -217,29 +239,22 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Writing header to the output file.\n");
     put_header(output);
 
-    log_printf(STATUS_REPORTS, "status", "Entering first search...\n");
+    log_printf(STATUS_REPORTS, "status", "Entering first pass...\n");
 
-    for (size_t line_id = 0; line_id < line_count; ++line_id) {
-        log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
-        process_line(lines[line_id], output, listing, &errno);
-    }
+    assemble(output, listing, lines, line_count, &errno);
 
-    log_printf(STATUS_REPORTS, "status", "Entering final loop...\n");
-    log_printf(STATUS_REPORTS, "status", "Reseting output file...\n");
+    log_printf(STATUS_REPORTS, "status", "Entering final pass...\n");
+    log_printf(STATUS_REPORTS, "status", "Resetting output file...\n");
     fseek(output, 0, SEEK_SET);
     put_header(output);
-    log_printf(STATUS_REPORTS, "status", "Reseting listing file...\n");
+    log_printf(STATUS_REPORTS, "status", "Resetting listing file...\n");
     fseek(listing, 0, SEEK_SET);
 
-    for (size_t line_id = 0; line_id < line_count; ++line_id) {
-        log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
-        process_line(lines[line_id], output, listing, &errno);
-    }
+    assemble(output, listing, lines, line_count, &errno);
 
     free(buffer);
     free(lines);
-    free(label_hashes);
-    free(label_values);
+    free(labels);
     fclose(output);
 
     return EXIT_SUCCESS;
@@ -298,6 +313,13 @@ void put_header(FILE* output) {
     fwrite(FILE_PREFIX, PREFIX_SIZE, 1, output);
     fwrite(&PROC_VERSION, sizeof(PROC_VERSION), 1, output);
     fseek(output, HEADER_SIZE, SEEK_SET);
+}
+
+void assemble(FILE* output, FILE* listing, const char** lines, size_t line_count, int* err_code) {
+    for (size_t line_id = 0; line_id < line_count; ++line_id) {
+        log_printf(STATUS_REPORTS, "status", "Processing line %s.\n", lines[line_id]);
+        process_line(lines[line_id], output, listing, &errno);
+    }
 }
 
 #define DEF_CMD(name, parse_script, exec_script) \
@@ -359,31 +381,29 @@ void process_line(const char* line, FILE* output, FILE* listing, int* const err_
 static size_t label_count = 0;
 
 void add_label(hash_t hash, uintptr_t point, int* const err_code) {
-    _LOG_FAIL_CHECK_(label_hashes, "error", ERROR_REPORTS, return, err_code, ENOENT);
-    _LOG_FAIL_CHECK_(label_values, "error", ERROR_REPORTS, return, err_code, ENOENT);
+    _LOG_FAIL_CHECK_(labels, "error", ERROR_REPORTS, return, err_code, ENOENT);
     _LOG_FAIL_CHECK_(label_count < label_max_count, "error", ERROR_REPORTS, return, err_code, ENOMEM);
 
     for (size_t label_id = 0; label_id < label_count; ++label_id) {
-        if (hash == label_hashes[label_id]) {
-            label_values[label_id] = point;
+        if (hash == labels[label_id].hash) {
+            labels[label_id].point = point;
             return;
         }
     }
 
-    label_hashes[label_count] = hash;
-    label_values[label_count] = point;
+    labels[label_count].hash  = hash;
+    labels[label_count].point = point;
     ++label_count;
 }
 
 uintptr_t get_label(hash_t hash, int* const err_code) {
-    _LOG_FAIL_CHECK_(label_hashes, "error", ERROR_REPORTS, return 0, err_code, ENOENT);
-    _LOG_FAIL_CHECK_(label_values, "error", ERROR_REPORTS, return 0, err_code, ENOENT);
+    _LOG_FAIL_CHECK_(labels, "error", ERROR_REPORTS, return 0, err_code, ENOENT);
 
     for (size_t label_id = 0; label_id < label_count; ++label_id) {
-        if (hash == label_hashes[label_id]) return label_values[label_id];
+        if (hash == labels[label_id].hash) return labels[label_id].point;
     }
 
     int status = 0;
     add_label(hash, 0, &status);
-    return status == 0 ? label_values[label_count - 1] : 0;
+    return status == 0 ? labels[label_count - 1].point : 0;
 }
