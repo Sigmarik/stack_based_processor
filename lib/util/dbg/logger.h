@@ -36,7 +36,7 @@ enum IMPORTANCES {
  * @param __VA_ARGS__ arguments as if they were in printf()
  */
 #define log_printf(importance, tag, ...) do {                                                            \
-    _log_printf(importance, tag, " ----- Call at line %d of file %s. -----\n", __LINE__, __FILE__);  \
+    _log_printf(importance, tag, " ----- Called from %s:%d. -----\n", __FILE__, __LINE__);  \
     _log_printf(importance, tag, __VA_ARGS__);                                                           \
 } while(0)
 #else

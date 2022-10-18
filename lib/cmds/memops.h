@@ -1,25 +1,131 @@
 DEF_CMD(PUSH, {
-    int arg = 0;
-    char arg_first_char = 0;
-    sscanf(ARG_PTR, " %c", &arg_first_char);
-    if (arg_first_char == '\'') {
-        sscanf(ARG_PTR, " \'%c\'", (char*)&arg);
-        log_printf(STATUS_REPORTS, "status", "Character %c (%02X) was detected.\n", (char)arg, (char)arg);
-    } else {
-        sscanf(ARG_PTR, "%d", &arg);
-        log_printf(STATUS_REPORTS, "status", "Number %d was detected.\n", arg);
-    }
-    BUF_WRITE(&arg, sizeof(arg));
+    PPArgument arg = read_pparg(ARG_PTR);
+    BUF_WRITE(&arg.value, sizeof(arg.value));
+    BUF_PTR[0] |= arg.props;
+    log_printf(STATUS_REPORTS, "status", "Parser decided on value = %d, properties = %d.\n", arg.value, arg.props);
 }, {
     int arg = 0;
     memcpy(&arg, ARG_PTR, sizeof(arg));
-    stack_push(STACK, arg, ERRNO);
+    char usage = *EXEC_POINT & 3;
+                            /* ^ first two bits */
+    log_printf(STATUS_REPORTS, "status", "Argument = %d, command mask = %d.\n", arg, usage);
+    switch (usage) {
+        case 0: {
+            stack_push(STACK, arg, ERRNO);
+        } break;
+
+        case USE_MEMORY: {
+            _LOG_FAIL_CHECK_(0 <= arg && arg < (int)RAM_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in PUSH at %0*X.\n", arg, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            stack_push(STACK, RAM[arg], ERRNO);
+        } break;
+
+        case USE_REGISTER: {
+            _LOG_FAIL_CHECK_(0 <= arg && arg < (int)REG_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was specified in PUSH at %0*X.\n", arg, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            stack_push(STACK, reg[arg], ERRNO);
+        } break;
+
+        case USE_REGISTER | USE_MEMORY: {
+            int reg_id = arg & 0xFF;
+
+            int pointer_shift = 0;
+            memcpy(&pointer_shift, (char*)&arg + 1, sizeof(pointer_shift) - 1);
+            if (arg < 0) *((char*)&pointer_shift + sizeof(pointer_shift) - 1) = (char)0xFF;
+
+            _LOG_FAIL_CHECK_(0 <= reg_id && reg_id < (int)REG_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was detected while executing PUSH at %0*X.\n", reg_id, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            int ram_index = reg[reg_id] + pointer_shift;
+
+            _LOG_FAIL_CHECK_(0 <= ram_index && ram_index < (int)RAM_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was detected while executing PUSH at %0*X.\n", ram_index, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            stack_push(STACK, RAM[ram_index], ERRNO);
+        } break;
+
+        default: {log_printf(ERROR_REPORTS, "error", "Usage tag had unexpected value while executing %0*X.\n", sizeof(void*), EXEC_POINT);}
+    }
     SHIFT += (int)sizeof(arg);
 })
 
 DEF_CMD(POP, {}, {
     _LOG_EMPT_STACK_("POP");
     stack_pop(STACK, ERRNO);
+})
+
+DEF_CMD(MOVE, {
+    PPArgument arg = read_pparg(ARG_PTR);
+    BUF_WRITE(&arg.value, sizeof(arg.value));
+    BUF_PTR[0] |= arg.props;
+    log_printf(STATUS_REPORTS, "status", "Parser decided on value = %d, properties = %d.\n", arg.value, arg.props);
+}, {
+    _LOG_EMPT_STACK_("MOVE");
+    int arg = 0;
+    memcpy(&arg, ARG_PTR, sizeof(arg));
+    char usage = *EXEC_POINT & 3;
+                            /* ^ first two bits */
+    log_printf(STATUS_REPORTS, "status", "Argument = %d, command mask = %d.\n", arg, usage);
+    switch (usage) {
+        case 0: {
+            stack_pop(STACK, ERRNO);
+        } break;
+
+        case USE_MEMORY: {
+            _LOG_FAIL_CHECK_(0 <= arg && arg < (int)RAM_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in MOVE at %0*X.\n", arg, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            RAM[arg] = (int)stack_get(STACK, ERRNO);
+            stack_pop(STACK);
+        } break;
+
+        case USE_REGISTER: {
+            _LOG_FAIL_CHECK_(0 <= arg && arg < (int)REG_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was specified in MOVE at %0*X.\n", arg, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            reg[arg] = (int)stack_get(STACK, ERRNO);
+            stack_pop(STACK, ERRNO);
+        } break;
+
+        case USE_REGISTER | USE_MEMORY: {
+            int reg_id = arg & 0xFF;
+
+            int pointer_shift = 0;
+            memcpy(&pointer_shift, (char*)&arg + 1, sizeof(pointer_shift) - 1);
+
+            _LOG_FAIL_CHECK_(0 <= reg_id && reg_id < (int)REG_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was detected while executing MOVE at %0*X.\n", reg_id, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            int ram_index = reg[reg_id] + pointer_shift;
+
+            _LOG_FAIL_CHECK_(0 <= ram_index && ram_index < (int)RAM_SIZE, "error", ERROR_REPORTS, {
+                log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was detected while executing MOVE at %0*X.\n", ram_index, sizeof(void*), EXEC_POINT);
+                SHIFT = 0;
+            }, ERRNO, EFAULT);
+
+            RAM[ram_index] = (int)stack_get(STACK, ERRNO);
+            stack_pop(STACK, ERRNO);
+        } break;
+
+        default: {log_printf(ERROR_REPORTS, "error", "Usage tag had unexpected value while executing %0*X.\n", sizeof(void*), EXEC_POINT);}
+    }
+    SHIFT += (int)sizeof(arg);
 })
 
 DEF_CMD(DUP, {}, {

@@ -339,8 +339,8 @@ size_t read_header(char* ptr, int* err_code) {
 int execute_command(const char* prog_start, const char* ptr, Stack* const stack, Stack* const addr_stack, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 
-    log_printf(STATUS_REPORTS, "status", "Executing command %02X at 0x%0*X.\n", 
-               *ptr & 0xFF, sizeof(prog_start), ptr - prog_start);
+    log_printf(STATUS_REPORTS, "status", "Executing command %02X (mask %d) at 0x%0*X.\n", 
+               (*ptr >> 2) & 0xFF, *ptr & 3, sizeof(prog_start), ptr - prog_start);
     
     _LOG_FAIL_CHECK_(stack_status(stack) == 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Memory stack status check failed.\n");
@@ -356,7 +356,7 @@ int execute_command(const char* prog_start, const char* ptr, Stack* const stack,
 
     int shift = 1;
 
-    switch (*ptr) {
+    switch ((*ptr) >> 2) {
         #include "lib/cmddef.h"
 
         default:

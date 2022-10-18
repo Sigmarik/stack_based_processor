@@ -24,8 +24,6 @@
 #include "lib/procinfo.h"
 #include "lib/proccmd.h"
 
-#pragma GCC diagnostic ignored "-Wcast-align"
-
 #define ASSEMBLER
 
 /**
@@ -303,11 +301,12 @@ void put_header(FILE* output) {
 }
 
 #define DEF_CMD(name, parse_script, exec_script) \
-if (hash == CMD_HASHES[CMD_##name]) {sequence[0] = CMD_##name; ++cmd_size; parse_script;} else
+if (hash == CMD_HASHES[CMD_##name]) {sequence[0] = (CMD_##name << 2); ++cmd_size; parse_script;} else
 
 #define ARG_PTR (line + shift)
 #define GET_LABEL(arg) get_label(arg, err_code)
 #define CUR_ID ftell(output)
+#define BUF_PTR sequence
 #define BUF_WRITE(ptr, length) {memcpy(sequence + cmd_size, ptr, length); cmd_size += length;}
 #define ERRNO err_code
 

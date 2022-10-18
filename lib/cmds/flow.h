@@ -32,7 +32,7 @@ DEF_CMD(JMPG, {
     int dest = 0;
     memcpy(&dest, ARG_PTR, sizeof(dest));
     _LOG_FAIL_CHECK_(dest != 0, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "JMP argument was 0, terminating.\n");
+        log_printf(ERROR_REPORTS, "error", "JMPG argument was 0, terminating.\n");
     }, ERRNO, EFAULT);
     _LOG_EMPT_STACK_("JMPG[top]");
     stack_content_t arg_a = stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
@@ -61,7 +61,7 @@ DEF_CMD(CALL, {
 
 DEF_CMD(RET, {}, {
     _LOG_FAIL_CHECK_(ADDR_STACK->size, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Address stack was zero when RET was called, terminating.");
+        log_printf(ERROR_REPORTS, "error", "Address stack was empty when RET was called, terminating.");
         shift = 0;
         break;
     }, ERRNO, EFAULT);
