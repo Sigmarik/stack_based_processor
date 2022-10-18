@@ -201,7 +201,7 @@ static const struct ActionTag LINE_TAGS[] = {
 };
 static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
 
-const char* DEFAULT_OUTPUT_NAME = "a.instr";
+const char* DEFAULT_OUTPUT_NAME = "a.bin";
 
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
