@@ -5,27 +5,31 @@ A set of programs implementing basic stack virtual processor and code assembler 
 
 Compile project (linux):
 
-...# make
+`...# make`
 
 Clean the project (linux):
 
-...# make clean
+`...# make clean`
 
 Execute an instruction file with the virtual processor (linux):
 
-...# make run ARGS="your_file.instr"
+`...# make run ARGS="your_file.bin"`
 
-Assemble file into instruction (linux):
+Assemble file into binary (linux):
 
-...# make asm ARGS="your_file.txt"
+`...# make asm ARGS="your_file.txt (optional)dest_file.bin"`
+
+Disassemble binary file (linux):
+
+`...# make disasm ARGS="your_file.bin (optional)dest_file.txt"`
 
 Remove build folders (linux):
 
-...# make rmbld
+`...# make rmbld`
 
 Return project to its original state:
 
-...# make rm
+`...# make rm`
 
 ## Processor commands
 are listed in the file **LANG.md**
@@ -37,4 +41,4 @@ Project is distributed under MIT license. More licensing information is specifie
 We don't think anyone will be contributing to this project as it was made purely for educational purposes.
 But, if you still want to contribute, you can learn how to do so by reading the file **CONTRIBUTING.md**.
 ## Contacts
-**(author)** Kudryashov Ilya - kudriashov.it@phystech.edu
+**(author)** Kudryashov Ilya - *kudriashov.it@phystech.edu*
