@@ -1,17 +1,24 @@
 DEF_CMD(END, {}, {
     SHIFT = 0;
-})
+}, {})
 
 DEF_CMD(ABORT, {}, {
     shift = 0;
     if (err_code) *err_code = EAGAIN;
-})
+}, {})
 
 DEF_CMD(JMP, {
     char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
-    sscanf(ARG_PTR, "%s", lbl_name);
-    hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-    int argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+    int argument = 0;
+
+    sscanf(ARG_PTR, "%d", &argument);
+
+    if (argument == 0) {
+        sscanf(ARG_PTR, "%s", lbl_name);
+        hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+        argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+    }
+
     BUF_WRITE(&argument, sizeof(argument));
 }, {
     int dest = 0;
@@ -20,33 +27,60 @@ DEF_CMD(JMP, {
     _LOG_FAIL_CHECK_(SHIFT != 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "JMP argument was 0, terminating.\n");
     }, ERRNO, EFAULT);
+}, {
+    int dest = 0;
+    memcpy(&dest, ARG_PTR, sizeof(dest));
+    SHIFT += (int)sizeof(dest);
+    fprintf(OUT_FILE, "%d", dest);
 })
 
 DEF_CMD(JMPG, {
     char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
-    sscanf(ARG_PTR, "%s", lbl_name);
-    hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-    int argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+    int argument = 0;
+
+    sscanf(ARG_PTR, "%d", &argument);
+
+    if (argument == 0) {
+        sscanf(ARG_PTR, "%s", lbl_name);
+        hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+        argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+    }
+
     BUF_WRITE(&argument, sizeof(argument));
 }, {
     int dest = 0;
     memcpy(&dest, ARG_PTR, sizeof(dest));
+
     _LOG_FAIL_CHECK_(dest != 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "JMPG argument was 0, terminating.\n");
     }, ERRNO, EFAULT);
+
     _LOG_EMPT_STACK_("JMPG[top]");
     stack_content_t arg_a = stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
     _LOG_EMPT_STACK_("JMPG[bottom]");
     stack_content_t arg_b = stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+    
     if (arg_a > arg_b) SHIFT = dest;
     else SHIFT += (int)sizeof(dest);
+}, {
+    int dest = 0;
+    memcpy(&dest, ARG_PTR, sizeof(dest));
+    SHIFT += (int)sizeof(dest);
+    fprintf(OUT_FILE, "%d", dest);
 })
 
 DEF_CMD(CALL, {
     char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
-    sscanf(ARG_PTR, "%s", lbl_name);
-    hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-    int argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+    int argument = 0;
+
+    sscanf(ARG_PTR, "%d", &argument);
+
+    if (argument == 0) {
+        sscanf(ARG_PTR, "%s", lbl_name);
+        hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+        argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+    }
+
     BUF_WRITE(&argument, sizeof(argument));
 }, {
     int dest = 0;
@@ -57,6 +91,11 @@ DEF_CMD(CALL, {
     _LOG_FAIL_CHECK_(SHIFT != 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "CALL argument was 0, terminating.\n");
     }, ERRNO, EFAULT);
+}, {
+    int dest = 0;
+    memcpy(&dest, ARG_PTR, sizeof(dest));
+    SHIFT += (int)sizeof(dest);
+    fprintf(OUT_FILE, "%d", dest);
 })
 
 DEF_CMD(RET, {}, {
@@ -68,4 +107,4 @@ DEF_CMD(RET, {}, {
     uintptr_t dest = (uintptr_t) stack_get(ADDR_STACK, ERRNO);
     stack_pop(ADDR_STACK, ERRNO);
     SHIFT = (int)(dest - (uintptr_t)EXEC_POINT);
-})
+}, {})

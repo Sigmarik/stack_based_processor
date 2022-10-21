@@ -10,6 +10,7 @@
  */
 
 #ifdef ASSEMBLER
+    #define ON_ASSEMBLER(...) _VA_ARGS_
     #ifndef ARG_PTR
         #error ARG_PTR was not defined while trying to access assembly code.
     #endif
@@ -27,6 +28,7 @@
     #endif
 #endif
 #ifdef PROCESSOR
+    #define ON_PROCESSOR(...) _VA_ARGS_
     #ifndef STACK
         #error STACK was not defined while trying to access execution code.
     #endif
@@ -59,6 +61,24 @@
     #endif
     #ifndef VMD
         #error VMD was not defined while trying to access execution code.
+    #endif
+#endif
+#ifdef DISASSEMBLER
+    #define ON_DISASM(...) _VA_ARGS_
+    #ifndef SHIFT
+        #error SHIFT was not defined while trying to access disassembly code.
+    #endif
+    #ifndef EXEC_POINT
+        #error EXEC_POINT was not defined while trying to access disassembly code.
+    #endif
+    #ifndef ARG_PTR
+        #error ARG_PTR was not defined while trying to access disassembly code.
+    #endif
+    #ifndef ERRNO
+        #error ERRNO was not defined while trying to access disassembly code.
+    #endif
+    #ifndef OUT_FILE
+        #error OUT_FILE was not defined while trying to access disassembly code.
     #endif
 #endif
 

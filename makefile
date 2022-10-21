@@ -47,7 +47,7 @@ PROC_BLD_FULL_NAME = $(PROC_BLD_NAME)_v$(PROC_BLD_VERSION)_$(PROC_BLD_TYPE)_$(PR
 ASM_BLD_FULL_NAME = $(ASM_BLD_NAME)_v$(ASM_BLD_VERSION)_$(ASM_BLD_TYPE)_$(ASM_BLD_PLATFORM)$(ASM_BLD_FORMAT)
 DASM_BLD_FULL_NAME = $(DASM_BLD_NAME)_v$(DASM_BLD_VERSION)_$(DASM_BLD_TYPE)_$(DASM_BLD_PLATFORM)$(DASM_BLD_FORMAT)
 
-all: asset assembler processor
+all: asset assembler processor disassembler
 
 ASSEMBLER_OBJECTS = assembler.o argparser.o logger.o debug.o file_proc.o
 assembler: $(ASSEMBLER_OBJECTS)
@@ -59,6 +59,11 @@ processor: $(PROCESSOR_OBJECTS)
 	mkdir -p $(BLD_FOLDER)
 	$(CC) $(PROCESSOR_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(PROC_BLD_FULL_NAME)
 
+DISASSEMBLER_OBJECTS = disasm.o argparser.o logger.o debug.o file_proc.o
+disassembler: $(DISASSEMBLER_OBJECTS)
+	mkdir -p $(BLD_FOLDER)
+	$(CC) $(DISASSEMBLER_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(DASM_BLD_FULL_NAME)
+
 asset:
 	mkdir -p $(BLD_FOLDER)
 	cp -r $(ASSET_FOLDER)/. $(BLD_FOLDER)
@@ -69,11 +74,17 @@ asm:
 run:
 	cd $(BLD_FOLDER) && exec ./$(PROC_BLD_FULL_NAME) $(ARGS)
 
+disasm:
+	cd $(BLD_FOLDER) && exec ./$(DASM_BLD_FULL_NAME) $(ARGS)
+
 assembler.o:
 	$(CC) $(CFLAGS) -c assembler.cpp
 
 processor.o:
 	$(CC) $(CFLAGS) -c processor.cpp
+
+disasm.o:
+	$(CC) $(CFLAGS) -c disasm.cpp
 
 file_proc.o:
 	$(CC) $(CFLAGS) -c lib/file_proc.cpp

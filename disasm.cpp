@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @author Ilya Kudryashov (kudriashov.it@phystech.edu)
- * @brief Program for executing commands from binary file (virtual processor).
+ * @brief Program for disassembling binary processor instruction files.
  * @version 0.1
  * @date 2022-08-26
  * 
@@ -26,7 +26,7 @@
 //* warning: stack protector not protecting function: all local arrays are less than 8 bytes long [-Wstack-protector]
 #pragma GCC diagnostic ignored "-Wstack-protector"
 
-#define PROCESSOR
+#define DISASSEMBLER
 
 typedef long long stack_content_t;
 stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
@@ -54,10 +54,11 @@ void print_label();
  * @brief Read header and check if file matches requirements.
  * 
  * @param ptr pointer to the start of the file's content
+ * @param output file to write information about the program to
  * @param err_code variable to use as errno
  * @return size_t required pointer shift
  */
-size_t read_header(char* ptr, int* err_code = NULL);
+size_t read_header(char* ptr, FILE* output, int* err_code = NULL);
 
 /**
  * @brief Execute one command and return pointer shift.
@@ -68,7 +69,7 @@ size_t read_header(char* ptr, int* err_code = NULL);
  * @param err_code error code
  * @return size_t
  */
-int execute_command(const char* prog_start, const char* ptr, Stack* const stack, Stack* const addr_stack, int* const err_code = NULL);
+int execute_command(const char* prog_start, const char* ptr, FILE* file, int* const err_code = NULL);
 
 /**
  * @brief Get the file name from the list of command line arguments.
@@ -80,31 +81,17 @@ int execute_command(const char* prog_start, const char* ptr, Stack* const stack,
 const char* get_file_name(const int argc, const char** argv);
 
 /**
- * @brief Make console empty.
+ * @brief Get the output file name from the list of command line arguments.
  * 
+ * @param argc argument count
+ * @param argv argument values
+ * @return const char* 
  */
-void clear_console();
-
-/**
- * @brief Draw picture stored in VMD to the screen with UTF8 characters.
- * 
- */
-void draw_vmd();
-
-static const char PIX_STATES[] = R"($@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,"^`'. )";
-
-static size_t ram_size = 1024;
-static size_t screen_width = 32;
-static size_t screen_height = 32;
-static int* ram = NULL;
-static int* vmd = NULL;
+const char* get_output_file_name(const int argc, const char** argv);
 
 // Ignore everything less or equaly important as status reports.
 static unsigned int log_threshold = STATUS_REPORTS + 1;
 static const int NUMBER_OF_OWLS = 10;
-static size_t reg_size = 8;
-
-static int* reg = NULL;
 
 static const struct ActionTag LINE_TAGS[] = {
     {
@@ -126,49 +113,11 @@ static const struct ActionTag LINE_TAGS[] = {
         .description = "set log threshold to the specified number.\n"
                         "\tDoes not check if integer was specified."
     },
-    {
-        .name = {'R', ""}, 
-        .action = {
-            .parameters = (void*[]) {&reg_size},
-            .parameters_length = 1, 
-            .function = edit_int,
-        },
-        .description = "set max. number of cells register can hold.\n"
-                        "\tDoes not check if integer was specified."
-    },
-    {
-        .name = {'R', ""}, 
-        .action = {
-            .parameters = (void*[]) {&ram_size},
-            .parameters_length = 1, 
-            .function = edit_int,
-        },
-        .description = "set RAM size in cells.\n"
-                        "\tDoes not check if integer was specified."
-    },
-    {
-        .name = {'W', ""}, 
-        .action = {
-            .parameters = (void*[]) {&screen_width},
-            .parameters_length = 1, 
-            .function = edit_int,
-        },
-        .description = "set text screen width.\n"
-                        "\tDoes not check if integer was specified."
-    },
-    {
-        .name = {'H', ""}, 
-        .action = {
-            .parameters = (void*[]) {&screen_height},
-            .parameters_length = 1, 
-            .function = edit_int,
-        },
-        .description = "set text screen height.\n"
-                        "\tDoes not check if integer was specified."
-    },
 };
 
 static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
+
+const char* DEFAULT_OUTPUT_NAME = "program.txt";
 
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
@@ -177,25 +126,22 @@ int main(const int argc, const char** argv) {
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
-    // TODO: Create allocation table to systematically free() each allocated address.
-    reg = (int*) calloc(reg_size, sizeof(*reg));
-    ram = (int*) calloc(ram_size, sizeof(*ram));
-    vmd = (int*) calloc(screen_width * screen_height, sizeof(*vmd));
-    _LOG_FAIL_CHECK_(reg, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
-    _LOG_FAIL_CHECK_(ram, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
-    _LOG_FAIL_CHECK_(vmd, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
-    if (ram_size > 0) ram[0] = (int)ram_size;
-    if (ram_size > 1) ram[1] = (int)screen_width;
-    if (ram_size > 2) ram[2] = (int)screen_height;
-    if (ram_size > 3) ram[3] = (int)sizeof(PIX_STATES);
-
     const char* file_name = get_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
         printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
-        free(reg);
-        free(ram);
-        free(vmd);
+        return EXIT_FAILURE;
+    }, NULL, 0);
+
+    const char* out_name = get_output_file_name(argc, argv);
+    if (out_name == NULL) {
+        out_name = DEFAULT_OUTPUT_NAME;
+    }
+
+    log_printf(STATUS_REPORTS, "status", "Opening output file %s.\n", out_name);
+    FILE* output = fopen(out_name, "w");
+    _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Failed to create/open output file \"%s\", terminating...\n", out_name);
         return EXIT_FAILURE;
     }, NULL, 0);
 
@@ -203,9 +149,6 @@ int main(const int argc, const char** argv) {
     int fd = open(file_name, O_RDONLY);
     _LOG_FAIL_CHECK_(fd != -1, "error", ERROR_REPORTS, {
         printf("File was not opened, terminating...\n");
-        free(reg);
-        free(ram);
-        free(vmd);
         return EXIT_FAILURE;
     }, NULL, 0);
     size_t size = flength(fd);
@@ -217,61 +160,20 @@ int main(const int argc, const char** argv) {
 
     char* pointer = content;
 
-    log_printf(STATUS_REPORTS, "status", "Initializing stack...\n");
-
-    Stack stack = {};
-    Stack addr_stack = {};
-
-    stack_init(&stack, STACK_START_SIZE, &errno);
-    _LOG_FAIL_CHECK_(!stack_status(&stack), "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Failed to initialize main stack.\n");
-        stack_dump(&stack, ERROR_REPORTS);
-    }, NULL, 0);
-
-    stack_init(&addr_stack, ADDR_STACK_START_SIZE, &errno);
-    _LOG_FAIL_CHECK_(!stack_status(&stack), "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Failed to initialize addr stack.\n");
-        stack_dump(&stack, ERROR_REPORTS);
-    }, NULL, 0);
-
     log_printf(STATUS_REPORTS, "status", "Reading file header...\n");
-    size_t prefix_shift = read_header(pointer, &errno);
+    size_t prefix_shift = read_header(pointer, output, &errno);
     pointer += prefix_shift;
-    _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, {
-        free(content);
-        free(reg);
-        free(ram);
-        free(vmd);
-        stack_destroy(&stack, &errno);
-        stack_destroy(&addr_stack, &errno);
-        return EXIT_FAILURE;
-    }, NULL, 0);
+    _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, return EXIT_FAILURE, NULL, 0);
 
-    log_printf(STATUS_REPORTS, "status", "Starting executing commands...\n");
+    log_printf(STATUS_REPORTS, "status", "Starting disassembling commands...\n");
     int delta = 0;
-    while ((delta = execute_command(content, pointer, &stack, &addr_stack, &errno)) != 0) {
-        char* prev_ptr = pointer;
+    while ((delta = execute_command(content, pointer, output, &errno)) != 0) {
         pointer += delta;
-        _LOG_FAIL_CHECK_(pointer > content && pointer < content + size, "error", ERROR_REPORTS, {
-            log_printf(ERROR_REPORTS, "error", "Invalid pointer value of 0x%0*X after executing command at 0x%0*X. Terminating.\n", 
-                                                sizeof(uintptr_t), pointer - content, sizeof(uintptr_t), prev_ptr - content);
-            free(content);
-            free(reg);
-            free(ram);
-            free(vmd);
-            stack_destroy(&stack, &errno);
-            stack_destroy(&addr_stack, &errno);
-            return EXIT_FAILURE;
-        }, &errno, EFAULT);
+        if (!(pointer > content && pointer < content + size)) break;
     }
 
-    log_printf(STATUS_REPORTS, "status", "Execution finished, cleaning allocated memory...\n");
+    log_printf(STATUS_REPORTS, "status", "Disassembly finished, cleaning allocated memory...\n");
     free(content);
-    free(reg);
-    free(ram);
-    free(vmd);
-    stack_destroy(&stack, &errno);
-    stack_destroy(&addr_stack, &errno);
 
     if (errno) return EXIT_FAILURE;
     return EXIT_SUCCESS;
@@ -293,13 +195,13 @@ void print_owl(const int argc, void** argv, const char* argument) {
 }
 
 void print_label() {
-    printf("Stack-based processor by Ilya Kudryashov.\n");
-    printf("Program implements stack-based virtual command processor.\n");
+    printf("Virtual processor instruction disassembler by Ilya Kudryashov.\n");
+    printf("Program disassembles processor instructions into pseudo-source code.\n");
     printf("Build from\n%s %s\n", __DATE__, __TIME__);
     log_printf(ABSOLUTE_IMPORTANCE, "build info", "Build from %s %s.\n", __DATE__, __TIME__);
 }
 
-size_t read_header(char* ptr, int* err_code) {
+size_t read_header(char* ptr, FILE* output, int* err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
     _LOG_FAIL_CHECK_(strncmp(FILE_PREFIX, ptr, PREFIX_SIZE) == 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Wrong file prefix, terminating. Prefix - \"%*s\", expected prefix - \"%*s\"\n",
@@ -307,10 +209,12 @@ size_t read_header(char* ptr, int* err_code) {
         return 0;
     }, err_code, EIO);
     _LOG_FAIL_CHECK_(*(version_t*)(ptr+4) <= PROC_VERSION, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Wrong file version, terminating. File version - %d, processor version - %d.\n",
+        log_printf(ERROR_REPORTS, "error", "Wrong file version, terminating. File version - %d, disassembler version - %d.\n",
                                                                             *(version_t*)(ptr+4), PROC_VERSION);
         return 0;
     }, err_code, EIO);
+    fprintf(output, "# Binary file version: %d\n", *(version_t*)(ptr+4));
+    fprintf(output, "# Disassembler version: %d\n\n", PROC_VERSION);
     return HEADER_SIZE;
 }
 
@@ -322,37 +226,22 @@ size_t read_header(char* ptr, int* err_code) {
     }, err_code, EFAULT);                                                                   \
 } while (0)
 
-#define DEF_CMD(name, parse_script, exec_script, disasm_script) case CMD_##name: {exec_script;} break;
+#define DEF_CMD(name, parse_script, exec_script, disasm_script) \
+case CMD_##name: {fprintf(file, #name " "); disasm_script; putc('\n', file);} break;
 
-#define STACK stack
-#define ADDR_STACK addr_stack
 #define SHIFT shift
 #define EXEC_POINT ptr
 #define ARG_PTR ptr + 1
 #define ERRNO err_code
-#define REG_SIZE reg_size
-#define RAM_SIZE ram_size
-#define RAM ram
-#define VMD_SIZE (screen_width * screen_height)
-#define VMD vmd
+#define OUT_FILE file
 
-int execute_command(const char* prog_start, const char* ptr, Stack* const stack, Stack* const addr_stack, int* const err_code) {
+int execute_command(const char* prog_start, const char* ptr, FILE* file, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 
     log_printf(STATUS_REPORTS, "status", "Executing command %02X (mask %d) at 0x%0*X.\n", 
                (*ptr >> 2) & 0xFF, *ptr & 3, sizeof(prog_start), ptr - prog_start);
     
-    _LOG_FAIL_CHECK_(stack_status(stack) == 0, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Memory stack status check failed.\n");
-        stack_dump(stack, ERROR_REPORTS);
-        return 0;
-    }, NULL, 0);
-
-    _LOG_FAIL_CHECK_(stack_status(addr_stack) == 0, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Address stack status check failed.\n");
-        stack_dump(addr_stack, ERROR_REPORTS);
-        return 0;
-    }, NULL, 0);
+    _LOG_FAIL_CHECK_(file, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 
     int shift = 1;
 
@@ -382,27 +271,16 @@ const char* get_file_name(const int argc, const char** argv) {
     return file_name;
 }
 
-#ifdef __linux__
-void clear_console() {
-    system("clear");
-}
-#elif defined(WIN32) || defined(WIN64)
-void clear_console() {
-    system("cls");
-}
-#endif
+const char* get_output_file_name(const int argc, const char** argv) {
+    const char* file_name = NULL;
 
-void draw_vmd() {
-    for (int id_y = 0; id_y < (int)screen_height; ++id_y) {
-        for (int id_x = 0; id_x < (int)screen_width; ++id_x) {
-
-            int brightness = vmd[id_y * (int)screen_width + id_x];
-
-            if (brightness < 0) brightness = 0;
-            if (brightness >= (int)sizeof(PIX_STATES)) brightness = (int)sizeof(PIX_STATES) - 1;
-
-            putc(PIX_STATES[brightness], stdout);
-        }
-        putc('\n', stdout);
+    bool enc_first_name = false;
+    for (int argument_id = 1; argument_id < argc; ++argument_id) {
+        if (*argv[argument_id] == '-') continue;
+        file_name = argv[argument_id];
+        if (enc_first_name) return file_name;
+        else enc_first_name = true;
     }
+
+    return NULL;
 }

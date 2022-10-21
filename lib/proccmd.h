@@ -21,14 +21,14 @@ static hash_t CMD_LABEL_HASH = get_hash(CMD_LABEL, CMD_LABEL + strlen(CMD_LABEL)
 
 static const size_t LABEL_MAX_NAME_LENGTH = 128;
 
-#define DEF_CMD(name, parse_script, exec_script) CMD_##name,
+#define DEF_CMD(name, parse_script, exec_script, disasm_script) CMD_##name,
 
 enum CMD_LIST {
     #include "cmddef.h"
 };
 
 #undef DEF_CMD
-#define DEF_CMD(name, parse_script, exec_script) #name,
+#define DEF_CMD(name, parse_script, exec_script, disasm_script) #name,
 
 //* Command as they should be written in a source file.
 static const char* CMD_SOURCE[] = {

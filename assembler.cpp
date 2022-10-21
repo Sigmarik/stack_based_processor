@@ -351,7 +351,7 @@ void assemble(FILE* listing, char** lines, size_t line_count, int* err_code) {
     }
 }
 
-#define DEF_CMD(name, parse_script, exec_script) \
+#define DEF_CMD(name, parse_script, exec_script, disasm_script) \
 if (hash == CMD_HASHES[CMD_##name]) {sequence[0] = (CMD_##name << 2); ++cmd_size; parse_script;} else
 
 #define ARG_PTR (line + shift)

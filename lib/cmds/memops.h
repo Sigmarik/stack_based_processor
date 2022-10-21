@@ -1,3 +1,34 @@
+#define DISASM_COMPLEX do{ \
+    switch (usage) { \
+        case 0: { \
+            fprintf(OUT_FILE, "%d", arg); \
+            if (isprint((char)arg)) { \
+                fprintf(OUT_FILE, " # \'%c\'", (char)arg); \
+            } \
+        } break; \
+ \
+        case USE_MEMORY: { \
+            fprintf(OUT_FILE, "[%d]", arg); \
+        } break; \
+ \
+        case USE_REGISTER: { \
+            fprintf(OUT_FILE, "R%cX", (char)(arg + 'A')); \
+        } break; \
+ \
+        case USE_REGISTER | USE_MEMORY: { \
+            int reg_id = arg & 0xFF; \
+ \
+            int pointer_shift = 0; \
+            memcpy(&pointer_shift, (char*)&arg + 1, sizeof(pointer_shift) - 1); \
+            if (arg < 0) *((char*)&pointer_shift + sizeof(pointer_shift) - 1) = (char)0xFF; \
+ \
+            fprintf(OUT_FILE, "[R%cX + %d]", (char)(reg_id + 'A'), pointer_shift); \
+        } break; \
+ \
+        default: {log_printf(ERROR_REPORTS, "error", "Usage tag had unexpected value while disassembling %0*X.\n", sizeof(void*), EXEC_POINT);} \
+    } \
+} while (0)
+
 DEF_CMD(PUSH, {
     PPArgument arg = read_pparg(ARG_PTR);
     BUF_WRITE(&arg.value, sizeof(arg.value));
@@ -57,12 +88,20 @@ DEF_CMD(PUSH, {
         default: {log_printf(ERROR_REPORTS, "error", "Usage tag had unexpected value while executing %0*X.\n", sizeof(void*), EXEC_POINT);}
     }
     SHIFT += (int)sizeof(arg);
+}, {
+    int arg = 0;
+    memcpy(&arg, ARG_PTR, sizeof(arg));
+    char usage = *EXEC_POINT & 3;
+                            /* ^ first two bits */
+    log_printf(STATUS_REPORTS, "status", "Argument = %d, command mask = %d.\n", arg, usage);
+    DISASM_COMPLEX;
+    SHIFT += (int)sizeof(arg);
 })
 
 DEF_CMD(POP, {}, {
     _LOG_EMPT_STACK_("POP");
     stack_pop(STACK, ERRNO);
-})
+}, {})
 
 DEF_CMD(MOVE, {
     PPArgument arg = read_pparg(ARG_PTR);
@@ -126,12 +165,20 @@ DEF_CMD(MOVE, {
         default: {log_printf(ERROR_REPORTS, "error", "Usage tag had unexpected value while executing %0*X.\n", sizeof(void*), EXEC_POINT);}
     }
     SHIFT += (int)sizeof(arg);
+}, {
+    int arg = 0;
+    memcpy(&arg, ARG_PTR, sizeof(arg));
+    char usage = *EXEC_POINT & 3;
+                            /* ^ first two bits */
+    log_printf(STATUS_REPORTS, "status", "Argument = %d, command mask = %d.\n", arg, usage);
+    DISASM_COMPLEX;
+    SHIFT += (int)sizeof(arg);
 })
 
 DEF_CMD(DUP, {}, {
     _LOG_EMPT_STACK_("DUP");
     stack_push(STACK, stack_get(STACK));
-})
+}, {})
 
 DEF_CMD(RGET, {
     int arg = 0;
@@ -146,6 +193,11 @@ DEF_CMD(RGET, {
         SHIFT = 0;
     }, ERRNO, EFAULT);
     stack_push(STACK, reg[reg_id], ERRNO);
+}, {
+    int reg_id = 0;
+    memcpy(&reg_id, ARG_PTR, sizeof(reg_id));
+    SHIFT += (int)sizeof(reg_id);
+    fprintf(OUT_FILE, "R%cX", (char)(reg_id + 'A'));
 })
 
 DEF_CMD(RSET, {
@@ -162,6 +214,11 @@ DEF_CMD(RSET, {
     }, ERRNO, EFAULT);
     _LOG_EMPT_STACK_("RSET");
     reg[reg_id] = (int)stack_get(STACK, ERRNO);
+}, {
+    int reg_id = 0;
+    memcpy(&reg_id, ARG_PTR, sizeof(reg_id));
+    SHIFT += (int)sizeof(reg_id);
+    fprintf(OUT_FILE, "R%cX", (char)(reg_id + 'A'));
 })
 
 DEF_CMD(MSET, {}, {
@@ -174,7 +231,7 @@ DEF_CMD(MSET, {}, {
         SHIFT = 0;
     }, ERRNO, EFAULT);
     RAM[key] = value;
-})
+}, {})
 
 DEF_CMD(MGET, {}, {
     _LOG_EMPT_STACK_("MGET[key]");
@@ -184,7 +241,7 @@ DEF_CMD(MGET, {}, {
         SHIFT = 0;
     }, ERRNO, EFAULT);
     stack_push(STACK, RAM[key], ERRNO);
-})
+}, {})
 
 DEF_CMD(VSET, {}, {
     _LOG_EMPT_STACK_("VSET[key]");
@@ -196,7 +253,7 @@ DEF_CMD(VSET, {}, {
         SHIFT = 0;
     }, ERRNO, EFAULT);
     VMD[key] = value;
-})
+}, {})
 
 DEF_CMD(VGET, {}, {
     _LOG_EMPT_STACK_("VGET[key]");
@@ -206,4 +263,6 @@ DEF_CMD(VGET, {}, {
         SHIFT = 0;
     }, ERRNO, EFAULT);
     stack_push(STACK, VMD[key], ERRNO);
-})
+}, {})
+
+#undef DISASM_COMPLEX
