@@ -61,7 +61,7 @@ void print_label();
 size_t read_header(char* ptr, FILE* output, int* err_code = NULL);
 
 /**
- * @brief Execute one command and return pointer shift.
+ * @brief Disassemble one command and return pointer shift.
  * 
  * @param ptr pointer to the pointer to the command
  * @param stack stack to operate on
@@ -129,7 +129,7 @@ int main(const int argc, const char** argv) {
     const char* file_name = get_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
-        printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
+        printf("To disassemble the program stored in a file run\n%s [file name]\n", argv[0]);
         return EXIT_FAILURE;
     }, NULL, 0);
 
