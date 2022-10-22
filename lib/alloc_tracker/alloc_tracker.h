@@ -13,9 +13,11 @@
 #define ALLOC_TRACKER_H
 
 #include "stdlib.h"
+#include "lib/util/dbg/logger.h"
+#include "lib/util/dbg/debug.h"
 
 //* Maximum number of allocations including 0-th element.
-const size_t MAX_ALLOCATIONS = 2048 + 1;
+const size_t MAX_ALLOCATIONS = 1024 + 1;
 
 typedef void dtor_t(void* subject);
 
@@ -25,7 +27,14 @@ typedef void dtor_t(void* subject);
  * @param subject allocation subject
  * @param dtor destructor
  */
-void track_allocation(void* subject, dtor_t *dtor);
+#define track_allocation(subject, dtor) do { \
+    log_printf(STATUS_REPORTS, "status", "Processing tracking request " #subject \
+                                         " with destructor "#dtor" in %s in %s:%d.\n", __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+    log_printf(STATUS_REPORTS, "status", "Subject value is %p.\n", *subject);\
+    _track_allocation(subject, dtor); \
+} while (0)
+
+void _track_allocation(void* subject, dtor_t *dtor);
 
 /**
  * @brief Untrack allocation by variable.
@@ -53,5 +62,12 @@ void free_all_allocations();
  * @param ptr pointer to the variable to reset
  */
 void free_var(void** ptr);
+
+/**
+ * @brief Safely call free() on pointer.
+ * 
+ * @param ptr
+ */
+void void_free(void* ptr);
 
 #endif

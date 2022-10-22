@@ -16,7 +16,7 @@ DEF_CMD(JMP, {
     if (argument == 0) {
         sscanf(ARG_PTR, "%s", lbl_name);
         hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-        argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+        argument = (int)get_label(LABEL_LIST, lbl_hash, ERRNO) - (int)CUR_ID;
     }
 
     BUF_WRITE(&argument, sizeof(argument));
@@ -43,7 +43,7 @@ DEF_CMD(JMPG, {
     if (argument == 0) {
         sscanf(ARG_PTR, "%s", lbl_name);
         hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-        argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+        argument = (int)get_label(LABEL_LIST, lbl_hash, ERRNO) - (int)CUR_ID;
     }
 
     BUF_WRITE(&argument, sizeof(argument));
@@ -78,7 +78,7 @@ DEF_CMD(CALL, {
     if (argument == 0) {
         sscanf(ARG_PTR, "%s", lbl_name);
         hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
-        argument = (int)get_label(lbl_hash, ERRNO) - (int)CUR_ID;
+        argument = (int)get_label(LABEL_LIST, lbl_hash, ERRNO) - (int)CUR_ID;
     }
 
     BUF_WRITE(&argument, sizeof(argument));

@@ -1,6 +1,6 @@
 CC = g++
 
-CFLAGS = -D _DEBUG -ggdb3 -std=c++2a -O0 -Wall -Wextra -Weffc++\
+CFLAGS = -I./ -D _DEBUG -ggdb3 -std=c++2a -O0 -Wall -Wextra -Weffc++\
 -Waggressive-loop-optimizations -Wc++14-compat -Wmissing-declarations\
 -Wcast-align -Wchar-subscripts -Wconditionally-supported\
 -Wconversion -Wctor-dtor-privacy -Wempty-body -Wfloat-equal -Wformat-nonliteral\
@@ -49,17 +49,17 @@ DASM_BLD_FULL_NAME = $(DASM_BLD_NAME)_v$(DASM_BLD_VERSION)_$(DASM_BLD_TYPE)_$(DA
 
 all: asset assembler processor disassembler
 
-ASSEMBLER_OBJECTS = assembler.o argparser.o logger.o debug.o file_proc.o
+ASSEMBLER_OBJECTS = assembler.o alloc_tracker.o common.o argparser.o logger.o debug.o file_proc.o
 assembler: $(ASSEMBLER_OBJECTS)
 	mkdir -p $(BLD_FOLDER)
 	$(CC) $(ASSEMBLER_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(ASM_BLD_FULL_NAME)
 
-PROCESSOR_OBJECTS = processor.o argparser.o logger.o debug.o file_proc.o
+PROCESSOR_OBJECTS = processor.o alloc_tracker.o common.o argparser.o logger.o debug.o file_proc.o
 processor: $(PROCESSOR_OBJECTS)
 	mkdir -p $(BLD_FOLDER)
 	$(CC) $(PROCESSOR_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(PROC_BLD_FULL_NAME)
 
-DISASSEMBLER_OBJECTS = disasm.o argparser.o logger.o debug.o file_proc.o
+DISASSEMBLER_OBJECTS = disasm.o alloc_tracker.o common.o argparser.o logger.o debug.o file_proc.o
 disassembler: $(DISASSEMBLER_OBJECTS)
 	mkdir -p $(BLD_FOLDER)
 	$(CC) $(DISASSEMBLER_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(DASM_BLD_FULL_NAME)
@@ -78,13 +78,16 @@ disasm:
 	cd $(BLD_FOLDER) && exec ./$(DASM_BLD_FULL_NAME) $(ARGS)
 
 assembler.o:
-	$(CC) $(CFLAGS) -c assembler.cpp
+	$(CC) $(CFLAGS) -c src/assembler.cpp
 
 processor.o:
-	$(CC) $(CFLAGS) -c processor.cpp
+	$(CC) $(CFLAGS) -c src/processor.cpp
 
 disasm.o:
-	$(CC) $(CFLAGS) -c disasm.cpp
+	$(CC) $(CFLAGS) -c src/disasm.cpp
+
+common.o:
+	$(CC) $(CFLAGS) -c src/utils/common.cpp
 
 alloc_tracker.o:
 	$(CC) $(CFLAGS) -c lib/alloc_tracker/alloc_tracker.cpp

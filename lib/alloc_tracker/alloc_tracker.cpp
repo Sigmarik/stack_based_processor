@@ -1,5 +1,7 @@
 #include "alloc_tracker.h"
 
+#include <errno.h>
+
 static struct Allocation {
     void* subject = NULL;
     dtor_t* dtor = NULL;
@@ -23,6 +25,9 @@ static char __fill_allocations() {
     GLB_allocations[MAX_ALLOCATIONS - 1]._next = NULL;
     GLB_allocations[0]._prev = GLB_allocations;
     GLB_allocations[0]._prev = GLB_allocations;
+    GLB_free_cell = GLB_allocations + 1;
+
+    return '\0';
 }
 
 static char __allocations_filler = __fill_allocations();
@@ -43,21 +48,24 @@ static void __pop_allocation(Allocation* ptr) {
     GLB_free_cell = ptr;
 }
 
-void track_allocation(void* subject, dtor_t *dtor) {
+void _track_allocation(void* subject, dtor_t *dtor) {
     Allocation* next_free = GLB_free_cell->_next;
     *GLB_free_cell = Allocation {subject, dtor, GLB_allocations, GLB_allocations->_prev};
     GLB_allocations->_prev->_next = GLB_free_cell;
+    GLB_allocations->_prev = GLB_free_cell;
+    log_printf(STATUS_REPORTS, "status", "Started tracking address %p with value %p at index %ld.\n", subject, *(void**)subject, GLB_free_cell - GLB_allocations);
+    GLB_free_cell = next_free;
 }
 
 void untrack_allocation(void* subject) {
-    for (Allocation* ptr = GLB_allocations->_next; ptr->subject != NULL; ptr = ptr->_next) {
+    for (Allocation* ptr = GLB_allocations->_next; ptr != GLB_allocations; ptr = ptr->_next) {
 
-        if (ptr->subject = subject) __pop_allocation(ptr);
+        if (ptr->subject == subject) __pop_allocation(ptr);
     }
 }
 
 void free_allocation(void* subject) {
-    for (Allocation* ptr = GLB_allocations->_next; ptr->subject != NULL; ptr = ptr->_next) {
+    for (Allocation* ptr = GLB_allocations->_next; ptr != GLB_allocations; ptr = ptr->_next) {
 
         if (ptr->subject != subject) {
 
@@ -68,8 +76,20 @@ void free_allocation(void* subject) {
 }
 
 void free_all_allocations() {
-    for (Allocation* ptr = GLB_allocations->_next; ptr->subject != NULL; ptr = ptr->_next) {
+    for (Allocation* ptr = GLB_allocations->_next; ptr != GLB_allocations; ptr = ptr->_next) {
+        log_printf(STATUS_REPORTS, "status", "Processing address %p with value %p from cell %ld.\n", ptr->subject, *(void**)ptr->subject, ptr - GLB_allocations);
         ptr->dtor(ptr->subject);
-        __pop_allocation(ptr);
     }
+    __fill_allocations();
+}
+
+void free_var(void** ptr) {
+    _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return, &errno, EFAULT);
+    log_printf(STATUS_REPORTS, "status", "Freeing address %p.\n", *ptr);
+    if (*ptr) free(*ptr);
+    *ptr = NULL;
+}
+
+void void_free(void* ptr) {
+    if (ptr) free(ptr);
 }

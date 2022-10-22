@@ -52,4 +52,11 @@ struct PPArgument {
  */
 PPArgument read_pparg(const char* arg_ptr);
 
+/**
+ * @brief Safely close file.
+ * 
+ * @param file
+ */
+void void_fclose(FILE* file);
+
 #endif

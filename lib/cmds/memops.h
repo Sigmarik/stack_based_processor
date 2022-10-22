@@ -103,6 +103,21 @@ DEF_CMD(POP, {}, {
     stack_pop(STACK, ERRNO);
 }, {})
 
+//     call Start + rax
+
+// Start:
+//     call ABSOLUTE_IMPORTANCE
+//     ret
+
+//     call BIG_ENDIAN
+//     ret
+
+//     call CMD_ABORT
+//     ret
+    
+//     call DATA_UPDATES
+//     ret
+
 DEF_CMD(MOVE, {
     PPArgument arg = read_pparg(ARG_PTR);
     BUF_WRITE(&arg.value, sizeof(arg.value));

@@ -117,3 +117,7 @@ PPArgument read_pparg(const char* arg_ptr) {
     }
     return answer;
 }
+
+void void_fclose(FILE* file) {
+    if (file) fclose(file);
+}
