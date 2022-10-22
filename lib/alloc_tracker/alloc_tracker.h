@@ -1,6 +1,6 @@
 /**
  * @file alloc_tracker.h
- * @author Solodovnikov Ivan (solodovnikov.ia@phystech.edu)
+ * @author Kudryashov Ilya (kudriashov.it@phystech.edu)
  * @brief Allocation tracker.
  * @version 0.1
  * @date 2022-10-22
@@ -46,5 +46,12 @@ void free_allocation(void* subject);
  * 
  */
 void free_all_allocations();
+
+/**
+ * @brief Call free() on pointer and set its value to zero.
+ * 
+ * @param ptr pointer to the variable to reset
+ */
+void free_var(void** ptr);
 
 #endif
