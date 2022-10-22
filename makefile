@@ -86,6 +86,9 @@ processor.o:
 disasm.o:
 	$(CC) $(CFLAGS) -c disasm.cpp
 
+alloc_tracker.o:
+	$(CC) $(CFLAGS) -c lib/alloc_tracker/alloc_tracker.cpp
+
 file_proc.o:
 	$(CC) $(CFLAGS) -c lib/file_proc.cpp
 
