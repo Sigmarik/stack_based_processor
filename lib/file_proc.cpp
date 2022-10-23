@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include "util/dbg/debug.h"
 
 size_t flength(int fd) {
@@ -120,9 +121,16 @@ PPArgument read_pparg(const char* arg_ptr) {
 
 void fclose_var(FILE** file_var) {
     _LOG_FAIL_CHECK_(file_var, "error", ERROR_REPORTS, return, &errno, EFAULT);
-    log_printf(STATUS_REPORTS, "status", "Closing file %p.\n", *file_var);
+    log_printf(STATUS_REPORTS, "status", "FClosing file %p.\n", *file_var);
     if (*file_var) fclose(*file_var);
     *file_var = NULL;
+}
+
+void close_var(int* fd_var) {
+    _LOG_FAIL_CHECK_(fd_var, "error", ERROR_REPORTS, return, &errno, EFAULT);
+    log_printf(STATUS_REPORTS, "status", "Closing file %p.\n", *fd_var);
+    if (*fd_var) close(*fd_var);
+    *fd_var = 0;
 }
 
 void void_fclose(FILE* file) {

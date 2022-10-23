@@ -53,14 +53,14 @@ void _track_allocation(void* subject, dtor_t *dtor) {
     *GLB_free_cell = Allocation {subject, dtor, GLB_allocations, GLB_allocations->_prev};
     GLB_allocations->_prev->_next = GLB_free_cell;
     GLB_allocations->_prev = GLB_free_cell;
-    log_printf(STATUS_REPORTS, "status", "Started tracking address %p with value %p at index %ld.\n", subject, *(void**)subject, GLB_free_cell - GLB_allocations);
+    log_printf(STATUS_REPORTS, "status", "Started tracking address %p at index %ld.\n", subject, GLB_free_cell - GLB_allocations);
     GLB_free_cell = next_free;
 }
 
 void untrack_allocation(void* subject) {
     for (Allocation* ptr = GLB_allocations->_next; ptr != GLB_allocations; ptr = ptr->_next) {
 
-        if (ptr->subject == subject) __pop_allocation(ptr);
+        if (ptr->subject == subject) { __pop_allocation(ptr); break; }
     }
 }
 
@@ -71,13 +71,15 @@ void free_allocation(void* subject) {
 
             ptr->dtor(ptr->subject);
             __pop_allocation(ptr);
+
+            break;
         }
     }
 }
 
 void free_all_allocations() {
     for (Allocation* ptr = GLB_allocations->_next; ptr != GLB_allocations; ptr = ptr->_next) {
-        log_printf(STATUS_REPORTS, "status", "Processing address %p with value %p from cell %ld.\n", ptr->subject, *(void**)ptr->subject, ptr - GLB_allocations);
+        log_printf(STATUS_REPORTS, "status", "Processing address %p from cell %ld.\n", ptr->subject, ptr - GLB_allocations);
         ptr->dtor(ptr->subject);
     }
     __fill_allocations();

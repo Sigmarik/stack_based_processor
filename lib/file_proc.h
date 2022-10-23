@@ -60,6 +60,13 @@ PPArgument read_pparg(const char* arg_ptr);
 void fclose_var(FILE** file_var);
 
 /**
+ * @brief Safely close and reset file descriptor variable.
+ * 
+ * @param fd_var
+ */
+void close_var(int* fd_var);
+
+/**
  * @brief Safely close file.
  * 
  * @param file

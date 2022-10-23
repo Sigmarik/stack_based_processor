@@ -30,7 +30,6 @@ typedef void dtor_t(void* subject);
 #define track_allocation(subject, dtor) do { \
     log_printf(STATUS_REPORTS, "status", "Processing tracking request " #subject \
                                          " with destructor "#dtor" in %s in %s:%d.\n", __PRETTY_FUNCTION__, __FILE__, __LINE__); \
-    log_printf(STATUS_REPORTS, "status", "Subject value is %p.\n", *subject);\
     _track_allocation(subject, dtor); \
 } while (0)
 

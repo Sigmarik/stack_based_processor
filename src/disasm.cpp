@@ -22,6 +22,7 @@
 #include "lib/file_proc.h"
 #include "lib/procinfo.h"
 #include "lib/proccmd.h"
+#include "utils/common.h"
 
 //* warning: stack protector not protecting function: all local arrays are less than 8 bytes long [-Wstack-protector]
 #pragma GCC diagnostic ignored "-Wstack-protector"
@@ -89,40 +90,22 @@ const char* get_file_name(const int argc, const char** argv);
  */
 const char* get_output_file_name(const int argc, const char** argv);
 
-// Ignore everything less or equaly important as status reports.
-static unsigned int log_threshold = STATUS_REPORTS + 1;
 static const int NUMBER_OF_OWLS = 10;
-
-static const struct ActionTag LINE_TAGS[] = {
-    {
-        .name = {'O', "owl"}, 
-        .action = {
-            .parameters = {}, 
-            .parameters_length = 0, 
-            .function = print_owl, 
-        },
-        .description = "print 10 owls on the screen."
-    },
-    {
-        .name = {'I', ""}, 
-        .action = {
-            .parameters = (void*[]) {&log_threshold},
-            .parameters_length = 1, 
-            .function = edit_int,
-        },
-        .description = "set log threshold to the specified number.\n"
-                        "\tDoes not check if integer was specified."
-    },
-};
-
-static const int NUMBER_OF_TAGS = sizeof(LINE_TAGS) / sizeof(*LINE_TAGS);
 
 const char* DEFAULT_OUTPUT_NAME = "program.txt";
 
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
 
-    parse_args(argc, argv, NUMBER_OF_TAGS, LINE_TAGS);
+    // Ignore everything less or equaly important as status reports.
+    static unsigned int log_threshold = STATUS_REPORTS + 1;
+
+    static const struct ActionTag line_tags[] = {
+        #include "cmd_flags/disasm_flags.h"
+    };
+    static const int number_of_tags = sizeof(line_tags) / sizeof(*line_tags);
+
+    parse_args(argc, argv, number_of_tags, line_tags);
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
@@ -130,7 +113,9 @@ int main(const int argc, const char** argv) {
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
         printf("To disassemble the program stored in a file run\n%s [file name]\n", argv[0]);
-        return EXIT_FAILURE;
+
+        return_clean(EXIT_FAILURE);
+
     }, NULL, 0);
 
     const char* out_name = get_output_file_name(argc, argv);
@@ -142,28 +127,43 @@ int main(const int argc, const char** argv) {
     FILE* output = fopen(out_name, "w");
     _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to create/open output file \"%s\", terminating...\n", out_name);
-        return EXIT_FAILURE;
+
+        return_clean(EXIT_FAILURE);
+
     }, NULL, 0);
+
+    track_allocation(&output, (dtor_t*)fclose_var);
 
     log_printf(STATUS_REPORTS, "status", "Opening file %s.\n", file_name);
     int fd = open(file_name, O_RDONLY);
     _LOG_FAIL_CHECK_(fd != -1, "error", ERROR_REPORTS, {
         printf("File was not opened, terminating...\n");
-        return EXIT_FAILURE;
+
+        return_clean(EXIT_FAILURE);
+
     }, NULL, 0);
+    track_allocation(&fd, (dtor_t*)close_var);
     size_t size = flength(fd);
 
     log_printf(STATUS_REPORTS, "status", "Reading file content...\n");
     char* content = (char*) calloc(size, sizeof(*content));
+    _LOG_FAIL_CHECK_(content, "error", ERROR_REPORTS, {
+        log_printf(ERROR_REPORTS, "error", "Failed to reallocate file content of size %ld, terminating.\n", size);
+
+        return_clean(EXIT_FAILURE);
+
+    }, &errno, ENOMEM);
+    track_allocation(&content, (dtor_t*)free_var);
     read(fd, content, size);
-    close(fd);
+    close(fd); fd = 0;
+    untrack_allocation(&fd);
 
     char* pointer = content;
 
     log_printf(STATUS_REPORTS, "status", "Reading file header...\n");
     size_t prefix_shift = read_header(pointer, output, &errno);
     pointer += prefix_shift;
-    _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, return EXIT_FAILURE, NULL, 0);
+    _LOG_FAIL_CHECK_(prefix_shift, "error", ERROR_REPORTS, return_clean(EXIT_FAILURE), NULL, 0);
 
     log_printf(STATUS_REPORTS, "status", "Starting disassembling commands...\n");
     int delta = 0;
@@ -172,11 +172,9 @@ int main(const int argc, const char** argv) {
         if (!(pointer > content && pointer < content + size)) break;
     }
 
-    log_printf(STATUS_REPORTS, "status", "Disassembly finished, cleaning allocated memory...\n");
-    free(content);
+    log_printf(STATUS_REPORTS, "status", "Disassembly complete.\n");
 
-    if (errno) return EXIT_FAILURE;
-    return EXIT_SUCCESS;
+    return_clean(errno ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 
 // Офигенно, ничего не менять.
