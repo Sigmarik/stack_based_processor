@@ -21,8 +21,8 @@
 #include "lib/util/dbg/debug.h"
 #include "lib/util/argparser.h"
 #include "lib/file_proc.h"
-#include "lib/procinfo.h"
-#include "lib/proccmd.h"
+#include "procinfo.h"
+#include "proccmd.h"
 #include "lib/alloc_tracker/alloc_tracker.h"
 #include "utils/common.h"
 
@@ -387,7 +387,7 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
             break;
         }
 
-        #include "lib/cmddef.h"
+        #include "cmddef.h"
 
         if_cmd_not_defined log_printf(ERROR_REPORTS, "error", "Unknown command %s.\n", code);
     } while (0);

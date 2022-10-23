@@ -12,7 +12,7 @@
 #ifndef PROC_CMD_H
 #define PROC_CMD_H
 
-#include "util/dbg/debug.h"
+#include "lib/util/dbg/debug.h"
 
 static const char CMD_COMMENT_CHAR = '#';
 

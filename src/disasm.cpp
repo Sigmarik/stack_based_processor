@@ -20,8 +20,8 @@
 #include "lib/util/dbg/debug.h"
 #include "lib/util/argparser.h"
 #include "lib/file_proc.h"
-#include "lib/procinfo.h"
-#include "lib/proccmd.h"
+#include "procinfo.h"
+#include "proccmd.h"
 #include "utils/common.h"
 
 //* warning: stack protector not protecting function: all local arrays are less than 8 bytes long [-Wstack-protector]
@@ -244,7 +244,7 @@ int execute_command(const char* prog_start, const char* ptr, FILE* file, int* co
     int shift = 1;
 
     switch ((*ptr) >> 2) {
-        #include "lib/cmddef.h"
+        #include "cmddef.h"
 
         default:
             log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", (*ptr) >> 2);
