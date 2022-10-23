@@ -178,4 +178,11 @@ stack_content_t* _stack_content(const Stack* const stack);
  */
 stack_hash_t _stack_hash(const Stack* const  stack);
 
+/**
+ * @brief Same as stack_destroy, but capable with dtor_t.
+ * 
+ * @param stack stack to destroy
+ */
+void stack_destroy_void(Stack* stack);
+
 #endif

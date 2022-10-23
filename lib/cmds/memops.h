@@ -60,7 +60,7 @@ DEF_CMD(PUSH, {
                 SHIFT = 0;
             }, ERRNO, EFAULT);
 
-            stack_push(STACK, reg[arg], ERRNO);
+            stack_push(STACK, REG[arg], ERRNO);
         } break;
 
         case USE_REGISTER | USE_MEMORY: {
@@ -75,7 +75,7 @@ DEF_CMD(PUSH, {
                 SHIFT = 0;
             }, ERRNO, EFAULT);
 
-            int ram_index = reg[reg_id] + pointer_shift;
+            int ram_index = REG[reg_id] + pointer_shift;
 
             _LOG_FAIL_CHECK_(0 <= ram_index && ram_index < (int)RAM_SIZE, "error", ERROR_REPORTS, {
                 log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was detected while executing PUSH at %0*X.\n", ram_index, sizeof(void*), EXEC_POINT);
@@ -151,7 +151,7 @@ DEF_CMD(MOVE, {
                 SHIFT = 0;
             }, ERRNO, EFAULT);
 
-            reg[arg] = (int)stack_get(STACK, ERRNO);
+            REG[arg] = (int)stack_get(STACK, ERRNO);
             stack_pop(STACK, ERRNO);
         } break;
 
@@ -166,7 +166,7 @@ DEF_CMD(MOVE, {
                 SHIFT = 0;
             }, ERRNO, EFAULT);
 
-            int ram_index = reg[reg_id] + pointer_shift;
+            int ram_index = REG[reg_id] + pointer_shift;
 
             _LOG_FAIL_CHECK_(0 <= ram_index && ram_index < (int)RAM_SIZE, "error", ERROR_REPORTS, {
                 log_printf(ERROR_REPORTS, "error", "Incorrect register index of %d was detected while executing MOVE at %0*X.\n", ram_index, sizeof(void*), EXEC_POINT);
@@ -207,7 +207,7 @@ DEF_CMD(RGET, {
         log_printf(ERROR_REPORTS, "error", "Invarid register index of %d in RGET, terminating.\n", reg_id);
         SHIFT = 0;
     }, ERRNO, EFAULT);
-    stack_push(STACK, reg[reg_id], ERRNO);
+    stack_push(STACK, REG[reg_id], ERRNO);
 }, {
     int reg_id = 0;
     memcpy(&reg_id, ARG_PTR, sizeof(reg_id));
@@ -228,7 +228,7 @@ DEF_CMD(RSET, {
         SHIFT = 0;
     }, ERRNO, EFAULT);
     _LOG_EMPT_STACK_("RSET");
-    reg[reg_id] = (int)stack_get(STACK, ERRNO);
+    REG[reg_id] = (int)stack_get(STACK, ERRNO);
 }, {
     int reg_id = 0;
     memcpy(&reg_id, ARG_PTR, sizeof(reg_id));

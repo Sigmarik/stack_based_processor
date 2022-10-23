@@ -215,5 +215,9 @@ stack_hash_t _stack_hash(const Stack* const stack) {
     return hash;
 }
 
+void stack_destroy_void(Stack* stack) {
+    stack_destroy(stack, NULL);
+}
+
 #endif
 
