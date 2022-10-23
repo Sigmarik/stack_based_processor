@@ -23,6 +23,7 @@
 #include "procinfo.h"
 #include "proccmd.h"
 #include "utils/common.h"
+#include "utils/argworks.h"
 
 //* warning: stack protector not protecting function: all local arrays are less than 8 bytes long [-Wstack-protector]
 #pragma GCC diagnostic ignored "-Wstack-protector"

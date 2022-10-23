@@ -23,6 +23,7 @@
 #include "procinfo.h"
 #include "proccmd.h"
 #include "utils/common.h"
+#include "utils/argworks.h"
 
 //* warning: stack protector not protecting function: all local arrays are less than 8 bytes long [-Wstack-protector]
 #pragma GCC diagnostic ignored "-Wstack-protector"
@@ -32,23 +33,6 @@
 typedef long long stack_content_t;
 stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
 #include "lib/stackworks.h"
-
-struct MemorySegment {
-    int* content = NULL;
-    size_t size = 1024;
-};
-
-void MemorySegment_ctor(MemorySegment* segment);
-void MemorySegment_dtor(MemorySegment* segment);
-
-struct FrameBuffer {
-    int* content = NULL;
-    size_t width = 32;
-    size_t height = 32;
-};
-
-void FrameBuffer_ctor(FrameBuffer* buffer);
-void FrameBuffer_dtor(FrameBuffer* buffer);
 
 static const size_t STACK_START_SIZE = 1024;
 static const size_t ADDR_STACK_START_SIZE = 16;
@@ -91,7 +75,7 @@ size_t read_header(char* ptr, int* err_code = NULL);
  */
 int execute_command(const char* prog_start, const char* ptr, 
                     Stack* const stack, Stack* const addr_stack,
-                    MemorySegment ram, MemorySegment reg, FrameBuffer vmd, 
+                    MemorySegment* ram, MemorySegment* reg, FrameBuffer* vmd, 
                     int* const err_code = NULL);
 
 /**
@@ -126,7 +110,7 @@ int main(const int argc, const char** argv) {
     unsigned int log_threshold = STATUS_REPORTS + 1;
     FrameBuffer vmd = {};
     MemorySegment ram = {};
-    MemorySegment reg = {};
+    MemorySegment reg = {}; reg.size = 8;
 
     static const struct ActionTag line_tags[] = {
         #include "cmd_flags/processor_flags.h"
@@ -211,7 +195,7 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Starting executing commands...\n");
     int delta = 0;
-    while ((delta = execute_command(content, pointer, &stack, &addr_stack, ram, reg, vmd, &errno)) != 0) {
+    while ((delta = execute_command(content, pointer, &stack, &addr_stack, &ram, &reg, &vmd, &errno)) != 0) {
 
         char* prev_ptr = pointer;
 
@@ -229,27 +213,6 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Execution finished, cleaning allocated memory...\n");
 
     return_clean(errno ? EXIT_FAILURE : EXIT_SUCCESS);
-}
-
-void MemorySegment_ctor(MemorySegment* segment) {
-    segment->content = (int*) calloc(segment->size, sizeof(*segment->content));
-}
-
-void MemorySegment_dtor(MemorySegment* segment) {
-    free(segment->content);
-    segment->content = NULL;
-    segment->size = 0;
-}
-
-void FrameBuffer_ctor(FrameBuffer* buffer) {
-    buffer->content = (int*) calloc(buffer->width * buffer->height, sizeof(*buffer->content));
-}
-
-void FrameBuffer_dtor(FrameBuffer* buffer) {
-    free(buffer->content);
-    buffer->content = NULL;
-    buffer->width = 0;
-    buffer->height = 0;
 }
 
 // Офигенно, ничего не менять.
@@ -305,16 +268,14 @@ size_t read_header(char* ptr, int* err_code) {
 #define EXEC_POINT  ptr
 #define ARG_PTR     ptr + 1
 #define ERRNO       err_code
-#define REG_SIZE    reg.size
-#define REG         reg.content
-#define RAM_SIZE    ram.size
-#define RAM         ram.content
-#define VMD_SIZE    (vmd.width * vmd.height)
-#define VMD         vmd.content
+#define REG         ( *reg )
+#define RAM         ( *ram )
+#define VMD_SIZE    (vmd->width * vmd->height)
+#define VMD         ( *vmd )
 
 int execute_command(const char* prog_start, const char* ptr,
                     Stack* const stack, Stack* const addr_stack,
-                    MemorySegment ram, MemorySegment reg, FrameBuffer vmd,
+                    MemorySegment* ram, MemorySegment* reg, FrameBuffer* vmd,
                     int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 

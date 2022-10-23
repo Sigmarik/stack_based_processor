@@ -49,17 +49,17 @@ DASM_BLD_FULL_NAME = $(DASM_BLD_NAME)_v$(DASM_BLD_VERSION)_$(DASM_BLD_TYPE)_$(DA
 
 all: asset assembler processor disassembler
 
-ASSEMBLER_OBJECTS = assembler.o alloc_tracker.o common.o argparser.o logger.o debug.o file_proc.o
+ASSEMBLER_OBJECTS = assembler.o alloc_tracker.o argworks.o common.o argparser.o logger.o debug.o file_proc.o
 assembler: $(ASSEMBLER_OBJECTS)
 	mkdir -p $(BLD_FOLDER)
 	$(CC) $(ASSEMBLER_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(ASM_BLD_FULL_NAME)
 
-PROCESSOR_OBJECTS = processor.o alloc_tracker.o common.o argparser.o logger.o debug.o file_proc.o
+PROCESSOR_OBJECTS = processor.o alloc_tracker.o argworks.o common.o argparser.o logger.o debug.o file_proc.o
 processor: $(PROCESSOR_OBJECTS)
 	mkdir -p $(BLD_FOLDER)
 	$(CC) $(PROCESSOR_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(PROC_BLD_FULL_NAME)
 
-DISASSEMBLER_OBJECTS = disasm.o alloc_tracker.o common.o argparser.o logger.o debug.o file_proc.o
+DISASSEMBLER_OBJECTS = disasm.o alloc_tracker.o argworks.o common.o argparser.o logger.o debug.o file_proc.o
 disassembler: $(DISASSEMBLER_OBJECTS)
 	mkdir -p $(BLD_FOLDER)
 	$(CC) $(DISASSEMBLER_OBJECTS) $(CFLAGS) -o $(BLD_FOLDER)/$(DASM_BLD_FULL_NAME)
@@ -85,6 +85,9 @@ processor.o:
 
 disasm.o:
 	$(CC) $(CFLAGS) -c src/disasm.cpp
+
+argworks.o:
+	$(CC) $(CFLAGS) -c src/utils/argworks.cpp
 
 common.o:
 	$(CC) $(CFLAGS) -c src/utils/common.cpp

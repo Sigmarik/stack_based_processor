@@ -13,5 +13,5 @@ DEF_CMD(CCLR, {}, {
 }, {})
 
 DEF_CMD(DRAW, {}, {
-    draw_vmd(&vmd); //* Defined in processor.cpp
+    draw_vmd(&VMD); //* Defined in processor.cpp
 }, {})

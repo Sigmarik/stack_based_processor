@@ -47,12 +47,6 @@
     #ifndef ERRNO
         #error ERRNO was not defined while trying to access execution code.
     #endif
-    #ifndef REG_SIZE
-        #error REG_SIZE was not defined while trying to access execution code.
-    #endif
-    #ifndef RAM_SIZE
-        #error RAM_SIZE was not defined while trying to access execution code.
-    #endif
     #ifndef RAM
         #error RAM was not defined while trying to access execution code.
     #endif

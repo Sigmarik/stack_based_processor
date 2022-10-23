@@ -25,6 +25,7 @@
 #include "proccmd.h"
 #include "lib/alloc_tracker/alloc_tracker.h"
 #include "utils/common.h"
+#include "utils/argworks.h"
 
 #define ASSEMBLER
 

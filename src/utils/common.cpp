@@ -17,3 +17,30 @@ void** bundle(size_t count, ...) {
     va_end(args);
     return array;
 }
+
+void MemorySegment_ctor(MemorySegment* segment) {
+    segment->content = (int*) calloc(segment->size, sizeof(*segment->content));
+}
+
+void MemorySegment_dtor(MemorySegment* segment) {
+    free(segment->content);
+    segment->content = NULL;
+    segment->size = 0;
+}
+
+void _MemorySegment_dump(MemorySegment* segment, unsigned int importance) {
+    for (size_t id = 0; id < segment->size; ++id) {
+        _log_printf(importance, "dump", "[%6ld] = %d\n", id, segment->content[id]);
+    }
+}
+
+void FrameBuffer_ctor(FrameBuffer* buffer) {
+    buffer->content = (int*) calloc(buffer->width * buffer->height, sizeof(*buffer->content));
+}
+
+void FrameBuffer_dtor(FrameBuffer* buffer) {
+    free(buffer->content);
+    buffer->content = NULL;
+    buffer->width = 0;
+    buffer->height = 0;
+}

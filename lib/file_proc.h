@@ -34,24 +34,6 @@ size_t flength(int fd);
  */
 size_t parse_lines(FILE* file, char** *text, char* *buffer, int* error_code = NULL);
 
-enum USAGE_TYPES {
-    USE_REGISTER = 1 << 0,
-    USE_MEMORY = 1 << 1,
-};
-
-struct PPArgument {
-    int value = 0;
-    char props = 0;
-};
-
-/**
- * @brief Extract push/pop argument from the string.
- * 
- * @param arg_ptr argument
- * @return PPArgument 
- */
-PPArgument read_pparg(const char* arg_ptr);
-
 /**
  * @brief Safely close and reset FILE* variable.
  * 
