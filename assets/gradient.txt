@@ -1,7 +1,7 @@
 PUSH 0
-RSET 0
-RSET 1
-POP
+DUP
+MOVE RAX
+MOVE RBX
 
 HERE loop_x_bgn
     PUSH 10
@@ -9,48 +9,42 @@ HERE loop_x_bgn
     POP
 
     PUSH 0
-    RSET 1
-    POP
+    MOVE RBX
     HERE loop_y_bgn
         PUSH '-'
         OUTC
         POP
 
-        RGET 0
-        RGET 1
+        PUSH RAX
+        PUSH RBX
         SUB
 
         PUSH 2
-        PUSH 3
-        MGET
+        PUSH [3]
         DIV
         ADD
 
-        RGET 0
-        RGET 1
+        PUSH RAX
+        PUSH RBX
         CALL byXY
 
         VSET
 
-        RGET 1
+        PUSH RBX
         PUSH 1
         ADD
-        RSET 1
-        POP
+        MOVE RBX
 
-        RGET 1
-        PUSH 2
-        MGET
+        PUSH RBX
+        PUSH [2]
     JMPG loop_y_bgn
-    RGET 0
+    PUSH RAX
     PUSH 1
     ADD
-    RSET 0
-    POP
+    MOVE RAX
 
-    RGET 0
-    PUSH 1
-    MGET
+    PUSH RAX
+    PUSH [1]
 JMPG loop_x_bgn
 
 PUSH 10
@@ -62,9 +56,8 @@ DRAW
 
 
 JMP __byXY_end
-    HERE byXY
-    PUSH 1
-    MGET
+HERE byXY
+    PUSH [1]
     MUL
     ADD
     RET

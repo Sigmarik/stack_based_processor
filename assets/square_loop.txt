@@ -1,9 +1,8 @@
 PUSH 1
-RSET 0
-POP
+MOVE RAX
 
 HERE loop_bgn
-    RGET 0
+    PUSH RAX
     DUP
     MUL
     OUT
@@ -11,10 +10,11 @@ HERE loop_bgn
     PUSH 10
     OUTC
     POP
-    RGET 0
+    PUSH RAX
     PUSH 1
     ADD
-    RSET 0
+    DUP
+    MOVE RAX
     PUSH 11
 JMPG loop_bgn
 
