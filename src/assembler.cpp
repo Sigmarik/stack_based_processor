@@ -158,10 +158,8 @@ const int NUMBER_OF_OWLS = 10;
 #define DEFAULT_OUTPUT_NAME "a.bin"
 #define DEFAULT_LISTING_NAME "listing.txt"
 
-void __end_main();
-
 int main(const int argc, const char** argv) {
-    atexit(__end_main);
+    atexit(log_end_program);
 
     //* Ignore everything less or equaly important as status reports.
     static unsigned int log_threshold = STATUS_REPORTS + 1;
@@ -183,18 +181,20 @@ int main(const int argc, const char** argv) {
 
     LabelSet_ctor(&labels);
     _LOG_FAIL_CHECK_(labels.array, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
-    track_allocation(labels.array, free);
+
+    track_allocation(&labels, (dtor_t*)LabelSet_dtor);
 
     output_content.content = (char*) calloc(out_size, sizeof(char));
     _LOG_FAIL_CHECK_(output_content.content, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
-    track_allocation(output_content.content, free);
+
+    track_allocation(&output_content, (dtor_t*)LabelSet_dtor);
 
     const char* file_name = get_input_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("Input file was not specified, terminating...\n");
         printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
         
-        return EXIT_FAILURE;
+        return_clean(EXIT_FAILURE);
 
     }, NULL, 0);
 
@@ -209,7 +209,7 @@ int main(const int argc, const char** argv) {
     _LOG_FAIL_CHECK_(input, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to open input file \"%s\", terminating...\n", file_name);
         
-        return EXIT_FAILURE;
+        return_clean(EXIT_FAILURE);
 
     }, NULL, 0);
     setvbuf(input, NULL, _IOFBF, flength(fileno(input)));
@@ -219,8 +219,8 @@ int main(const int argc, const char** argv) {
     size_t line_count = parse_lines(input, &lines, &buffer, &errno);
 
     log_printf(STATUS_REPORTS, "status", "LINES value is %p.\n", lines);
-    track_allocation(lines, free);
-    track_allocation(buffer, free);
+    track_allocation(&lines, (dtor_t*)free_var);
+    track_allocation(&buffer, (dtor_t*)free_var);
 
     fclose(input); input = NULL;
 
@@ -229,11 +229,11 @@ int main(const int argc, const char** argv) {
     _LOG_FAIL_CHECK_(output, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Failed to create/open output file \"%s\", terminating...\n", out_name);
 
-        return EXIT_FAILURE;
+        return_clean(EXIT_FAILURE);
 
     }, NULL, 0);
 
-    track_allocation(output, (dtor_t*)void_fclose);
+    track_allocation(&output, (dtor_t*)fclose_var);
 
     FILE* listing = NULL;
     if (gen_listing) {
@@ -246,7 +246,7 @@ int main(const int argc, const char** argv) {
                                             "No listing will be generated.\n", out_name);
         }, NULL, 0);
 
-        if (listing) track_allocation(listing, (dtor_t*)void_fclose);
+        if (listing) track_allocation(&listing, (dtor_t*)fclose_var);
 
     } else log_printf(STATUS_REPORTS, "status", "Listing files were disabled.\n");
 
@@ -267,12 +267,7 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Writing content to the file.\n");
     fwrite(output_content.content, sizeof(char), output_content.size, output);
 
-    return errno == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
-}
-
-void __end_main() {
-    free_all_allocations();
-    log_end_program();
+    return_clean(errno == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
 // Офигенно, ничего не менять.

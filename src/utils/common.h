@@ -14,6 +14,11 @@
 
 #include "lib/alloc_tracker/alloc_tracker.h"
 
+/**
+ * @brief Return value but clean all allocations first.
+ * 
+ */
+#define return_clean(value) do { free_all_allocations(); return value; } while (0)
 
 //* We need this function as it is impossible to create static constant lists from local functions.
 //* So... What it does is it creates a dynamic array and tracks it for later deletion.

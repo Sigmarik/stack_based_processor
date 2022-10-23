@@ -53,6 +53,13 @@ struct PPArgument {
 PPArgument read_pparg(const char* arg_ptr);
 
 /**
+ * @brief Safely close and reset FILE* variable.
+ * 
+ * @param file_var
+ */
+void fclose_var(FILE** file_var);
+
+/**
  * @brief Safely close file.
  * 
  * @param file
