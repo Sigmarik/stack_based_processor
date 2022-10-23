@@ -1,34 +1,3 @@
-#define DISASM_COMPLEX do{ \
-    switch (usage) { \
-        case 0: { \
-            fprintf(OUT_FILE, "%d", arg); \
-            if (isprint((char)arg)) { \
-                fprintf(OUT_FILE, " # \'%c\'", (char)arg); \
-            } \
-        } break; \
- \
-        case USE_MEMORY: { \
-            fprintf(OUT_FILE, "[%d]", arg); \
-        } break; \
- \
-        case USE_REGISTER: { \
-            fprintf(OUT_FILE, "R%cX", (char)(arg + 'A')); \
-        } break; \
- \
-        case USE_REGISTER | USE_MEMORY: { \
-            int reg_id = arg & 0xFF; \
- \
-            int pointer_shift = 0; \
-            memcpy(&pointer_shift, (char*)&arg + 1, sizeof(pointer_shift) - 1); \
-            if (arg < 0) *((char*)&pointer_shift + sizeof(pointer_shift) - 1) = (char)0xFF; \
- \
-            fprintf(OUT_FILE, "[R%cX + %d]", (char)(reg_id + 'A'), pointer_shift); \
-        } break; \
- \
-        default: {log_printf(ERROR_REPORTS, "error", "Usage tag had unexpected value while disassembling %0*X.\n", sizeof(void*), EXEC_POINT);} \
-    } \
-} while (0)
-
 DEF_CMD(PUSH, {
     PPArgument arg = read_pparg(ARG_PTR);
     BUF_WRITE(&arg.value, sizeof(arg.value));
@@ -55,7 +24,7 @@ DEF_CMD(PUSH, {
     char usage = *EXEC_POINT & 3;
                             /* ^ first two bits */
     log_printf(STATUS_REPORTS, "status", "Argument = %d, command mask = %d.\n", arg, usage);
-    DISASM_COMPLEX;
+    write_argument(OUT_FILE, usage, arg);
     SHIFT += (int)sizeof(arg);
 })
 
@@ -92,7 +61,7 @@ DEF_CMD(MOVE, {
     char usage = *EXEC_POINT & 3;
                             /* ^ first two bits */
     log_printf(STATUS_REPORTS, "status", "Argument = %d, command mask = %d.\n", arg, usage);
-    DISASM_COMPLEX;
+    write_argument(OUT_FILE, usage, arg);
     SHIFT += (int)sizeof(arg);
 })
 

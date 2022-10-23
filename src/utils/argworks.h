@@ -35,13 +35,22 @@ PPArgument read_pparg(const char* arg_ptr);
 /**
  * @brief Get operation subject by usage tags.
  * 
- * @param usage 
- * @param arg 
- * @param ram 
- * @param reg 
- * @param err_code 
- * @return 
+ * @param usage command usage tag
+ * @param arg command argument
+ * @param ram RAM memory segment
+ * @param reg register
+ * @param err_code variable to use as errno
+ * @return int* operation subject
  */
 int* link_argument(char usage, int *arg, MemorySegment ram, MemorySegment reg, int *err_code = NULL);
+
+/**
+ * @brief Write disassembled argument to file.
+ * 
+ * @param dest write destination
+ * @param usage command usage tag
+ * @param argument command argument
+ */
+void write_argument(FILE* dest, char usage, int argument);
 
 #endif

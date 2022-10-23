@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "lib/util/dbg/logger.h"
 #include "lib/util/dbg/debug.h"
@@ -132,4 +133,35 @@ int* link_argument(char usage, int *arg, MemorySegment ram, MemorySegment reg, i
         default: { log_printf(ERROR_REPORTS, "error", "Usage tag had an unexpected value of %d.\n", usage); }
     }
     return NULL;
+}
+
+void write_argument(FILE* dest, char usage, int argument) {
+    switch (usage) {
+        case 0: {
+            fprintf(dest, "%d", argument);
+            if (isprint((char)argument)) {
+                fprintf(dest, "\t\t# \'%c\'", (char)argument);
+            }
+        } break;
+
+        case USE_MEMORY: {
+            fprintf(dest, "[%d]", argument);
+        } break;
+
+        case USE_REGISTER: {
+            fprintf(dest, "R%cX", (char)(argument + 'A'));
+        } break;
+
+        case USE_REGISTER | USE_MEMORY: {
+            int reg_id = argument & 0xFF;
+
+            int pointer_shift = 0;
+            memcpy(&pointer_shift, (char*)&argument + 1, sizeof(pointer_shift) - 1);
+            if (argument < 0) *((char*)&pointer_shift + sizeof(pointer_shift) - 1) = (char)0xFF;
+
+            fprintf(dest, "[R%cX + %d]", (char)(reg_id + 'A'), pointer_shift);
+        } break;
+
+        default: {log_printf(ERROR_REPORTS, "error", "Usage tag had an unexpected value.\n");}
+    }
 }
