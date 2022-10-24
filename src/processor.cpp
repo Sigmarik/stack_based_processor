@@ -254,24 +254,33 @@ size_t read_header(char* ptr, int* err_code) {
 
 #define _LOG_EMPT_STACK_(command) do {                                                      \
     _LOG_FAIL_CHECK_(stack->size, "error", ERROR_REPORTS, {                                 \
-        log_printf(ERROR_REPORTS, "error", "Request to the empty stack in " command ".\n"); \
+        log_printf(ERROR_REPORTS, "error", "Request to the empty stack in %s.\n", command); \
         shift = 0;                                                                          \
         break;                                                                              \
     }, err_code, EFAULT);                                                                   \
 } while (0)
 
-#define DEF_CMD(name, parse_script, exec_script, disasm_script) case CMD_##name: {exec_script;} break;
+#define DEF_CMD(name, parse_script, exec_script, disasm_script) case CMD_##name: { \
+    log_printf(STATUS_REPORTS, "status", "Executing command " #name " (mask %d) at 0x%0*X.\n", \
+                                         *ptr & 3, sizeof(void*), ptr - prog_start); \
+    const char *COMMAND_NAME = #name; \
+    COMMAND_NAME = COMMAND_NAME; \
+    exec_script; \
+} break;
 
-#define STACK       stack
-#define ADDR_STACK  addr_stack
-#define SHIFT       shift
-#define EXEC_POINT  ptr
-#define ARG_PTR     ptr + 1
-#define ERRNO       err_code
-#define REG         ( *reg )
-#define RAM         ( *ram )
-#define VMD_SIZE    (vmd->width * vmd->height)
-#define VMD         ( *vmd )
+#define STACK           stack
+#define ADDR_STACK      addr_stack
+#define SHIFT           shift
+#define EXEC_POINT      ptr
+#define ARG_PTR         ptr + 1
+#define ERRNO           err_code
+#define REG             ( *reg )
+#define RAM             ( *ram )
+#define VMD_SIZE        (vmd->width * vmd->height)
+#define VMD             ( *vmd )
+#define PUSH(value)     stack_push(STACK, value, ERRNO)
+#define GET_TOP(var)    _LOG_EMPT_STACK_(COMMAND_NAME); var = stack_get(STACK, ERRNO)
+#define POP_TOP()       stack_pop(STACK, ERRNO)
 
 int execute_command(const char* prog_start, const char* ptr,
                     Stack* const stack, Stack* const addr_stack,
@@ -279,8 +288,8 @@ int execute_command(const char* prog_start, const char* ptr,
                     int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 
-    log_printf(STATUS_REPORTS, "status", "Executing command %02X (mask %d) at 0x%0*X.\n", 
-               (*ptr >> 2) & 0xFF, *ptr & 3, sizeof(prog_start), ptr - prog_start);
+    // log_printf(STATUS_REPORTS, "status", "Executing command %02X (mask %d) at 0x%0*X.\n", 
+    //            (*ptr >> 2) & 0xFF, *ptr & 3, sizeof(prog_start), ptr - prog_start);
     
     _LOG_FAIL_CHECK_(stack_status(stack) == 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Memory stack status check failed.\n");

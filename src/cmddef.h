@@ -26,6 +26,9 @@
     #ifndef ERRNO
         #error ERRNO was not defined while trying to access assembly code.
     #endif
+    #ifndef LABEL_LIST
+        #error LABEL_LIST was not defined while trying to access assembly code.
+    #endif
 #endif
 #ifdef PROCESSOR
     #define ON_PROCESSOR(...) _VA_ARGS_
@@ -55,6 +58,15 @@
     #endif
     #ifndef VMD
         #error VMD was not defined while trying to access execution code.
+    #endif
+    #ifndef PUSH
+        #error PUSH was not defined while trying to access execution code.
+    #endif
+    #ifndef GET_TOP
+        #error GET_TOP was not defined while trying to access execution code.
+    #endif
+    #ifndef POP_TOP
+        #error POP_TOP was not defined while trying to access execution code.
     #endif
 #endif
 #ifdef DISASSEMBLER

@@ -1,39 +1,13 @@
-DEF_CMD(ADD, {}, {
-    _LOG_EMPT_STACK_("ADD[top]");
-    stack_content_t arg_a = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+#define __STACK_ELEM_OPERATION(operation) { \
+    GET_TOP(stack_content_t arg_a); POP_TOP(); \
+    GET_TOP(stack_content_t arg_b); POP_TOP(); \
+    PUSH(arg_a operation arg_b); \
+}
 
-    _LOG_EMPT_STACK_("ADD[bottom]");
-    stack_content_t arg_b = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+DEF_CMD(ADD, {}, __STACK_ELEM_OPERATION(+), {})
 
-    stack_push(STACK, arg_a + arg_b);
-}, {})
+DEF_CMD(SUB, {}, __STACK_ELEM_OPERATION(-), {})
 
-DEF_CMD(SUB, {}, {
-    _LOG_EMPT_STACK_("SUB[top]");
-    int arg_a = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+DEF_CMD(MUL, {}, __STACK_ELEM_OPERATION(*), {})
 
-    _LOG_EMPT_STACK_("SUB[bottom]");
-    stack_content_t arg_b = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
-
-    stack_push(STACK, arg_a - arg_b);
-}, {})
-
-DEF_CMD(MUL, {}, {
-    _LOG_EMPT_STACK_("MUL[top]");
-    stack_content_t arg_a = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
-
-    _LOG_EMPT_STACK_("MUL[bottom]");
-    stack_content_t arg_b = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
-
-    stack_push(STACK, arg_a * arg_b);
-}, {})
-
-DEF_CMD(DIV, {}, {
-    _LOG_EMPT_STACK_("DIV[top]");
-    stack_content_t arg_a = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
-
-    _LOG_EMPT_STACK_("DIV[bottom]");
-    stack_content_t arg_b = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
-
-    stack_push(STACK, arg_a / arg_b);
-}, {})
+DEF_CMD(DIV, {}, __STACK_ELEM_OPERATION(/), {})
