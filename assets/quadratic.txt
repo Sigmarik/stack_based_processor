@@ -1,8 +1,29 @@
-PUSH 1
+
+PUSH 'A'
+OUTC
+POP
+PUSH '='
+OUTC
+POP
+RINT
 MOVE [0]
-PUSH -2
+
+PUSH 'B'
+OUTC
+POP
+PUSH '='
+OUTC
+POP
+RINT
 MOVE [1]
-PUSH -3
+
+PUSH 'C'
+OUTC
+POP
+PUSH '='
+OUTC
+POP
+RINT
 MOVE [2]
 
 # Calculate descr and push it to [3]

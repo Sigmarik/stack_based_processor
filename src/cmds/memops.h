@@ -15,7 +15,7 @@ DEF_CMD(PUSH, {
         SHIFT = 0;
         log_printf(ERROR_REPORTS, "error", "Failed to link command argument at %0*X.\n", sizeof(void*), EXEC_POINT);
     } else {
-        stack_push(STACK, *subject, ERRNO);
+        PUSH(*subject);
         SHIFT += (int)sizeof(arg);
     }
 }, {
@@ -29,8 +29,7 @@ DEF_CMD(PUSH, {
 })
 
 DEF_CMD(POP, {}, {
-    _LOG_EMPT_STACK_("POP");
-    stack_pop(STACK, ERRNO);
+    POP_TOP();
 }, {})
 
 DEF_CMD(MOVE, {
@@ -51,8 +50,8 @@ DEF_CMD(MOVE, {
         SHIFT = 0;
         log_printf(ERROR_REPORTS, "error", "Failed to link command argument at %0*X.\n", sizeof(void*), EXEC_POINT);
     } else {
-        *subject = (int)stack_get(STACK, ERRNO);
-        stack_pop(STACK, ERRNO);
+        GET_TOP(stack_content_t value); POP_TOP();
+        *subject = (int)value;
         SHIFT += (int)sizeof(arg);
     }
 }, {
@@ -66,30 +65,25 @@ DEF_CMD(MOVE, {
 })
 
 DEF_CMD(DUP, {}, {
-    _LOG_EMPT_STACK_("DUP");
-    stack_push(STACK, stack_get(STACK));
+    GET_TOP(stack_content_t value);
+    PUSH((int)value);
 }, {})
 
 DEF_CMD(VSET, {}, {
-    _LOG_EMPT_STACK_("VSET[key]");
-    int key = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
-    _LOG_EMPT_STACK_("VSET[value]");
-    int value = (int)stack_get(STACK, ERRNO);
-    _LOG_FAIL_CHECK_(0 <= key && key < (int)VMD_SIZE, "error", ERROR_REPORTS, {
+    GET_TOP(stack_content_t key); POP_TOP();
+    GET_TOP(stack_content_t value);
+    _LOG_FAIL_CHECK_(0 <= key && key < (stack_content_t)VMD_SIZE, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in MSET at %0*X.\n", key, sizeof(void*), EXEC_POINT);
         SHIFT = 0;
     }, ERRNO, EFAULT);
-    VMD.content[key] = value;
+    VMD.content[key] = (int)value;
 }, {})
 
 DEF_CMD(VGET, {}, {
-    _LOG_EMPT_STACK_("VGET[key]");
-    int key = (int)stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
-    _LOG_FAIL_CHECK_(0 <= key && key < (int)VMD_SIZE, "error", ERROR_REPORTS, {
+    GET_TOP(stack_content_t key); POP_TOP();
+    _LOG_FAIL_CHECK_(0 <= key && key < (stack_content_t)VMD_SIZE, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Incorrect memory index of %d was specified in VGET at %0*X.\n", key, sizeof(void*), EXEC_POINT);
         SHIFT = 0;
     }, ERRNO, EFAULT);
     stack_push(STACK, VMD.content[key], ERRNO);
 }, {})
-
-#undef DISASM_COMPLEX
