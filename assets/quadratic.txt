@@ -1,0 +1,173 @@
+PUSH 1
+MOVE [0]
+PUSH -2
+MOVE [1]
+PUSH -3
+MOVE [2]
+
+# Calculate descr and push it to [3]
+PUSH 4
+PUSH [0]
+PUSH [2]
+MUL
+MUL
+PUSH [1]
+DUP
+MUL
+SUB
+MOVE [3]
+
+PUSH [3]
+PUSH 0
+JMPG case_no_solutions
+JMP case_multiple_solutions
+
+JMP case_end
+HERE case_no_solutions
+    PUSH '\n'
+    OUTC
+    POP
+
+    PUSH 'N'
+    OUTC
+    POP
+    PUSH 'o'
+    OUTC
+    POP
+    PUSH ' '
+    OUTC
+    POP
+    PUSH 's'
+    OUTC
+    POP
+    PUSH 'o'
+    OUTC
+    POP
+    PUSH 'l'
+    OUTC
+    POP
+    PUSH 'u'
+    OUTC
+    POP
+    PUSH 't'
+    OUTC
+    POP
+    PUSH 'i'
+    OUTC
+    POP
+    PUSH 'o'
+    OUTC
+    POP
+    PUSH 'n'
+    OUTC
+    POP
+    PUSH 's'
+    OUTC
+    POP
+    PUSH '!'
+    OUTC
+    POP
+    PUSH '\n'
+    OUTC
+    POP
+
+    END
+JMP case_end
+HERE case_multiple_solutions
+    PUSH [3]
+    CALL sqrt
+    MOVE [3]
+
+    PUSH 2
+    PUSH [0]
+    MUL
+
+    PUSH -1
+    PUSH [1]
+    MUL
+    PUSH -1
+    PUSH [3]
+    MUL
+    ADD
+
+    DIV
+    
+    PUSH 'X'
+    OUTC
+    POP
+    PUSH '1'
+    OUTC
+    POP
+    PUSH '='
+    OUTC
+    POP
+
+    OUT
+    POP
+
+    PUSH '\n'
+    OUTC
+    POP
+
+
+    PUSH 2
+    PUSH [0]
+    MUL
+
+    PUSH -1
+    PUSH [1]
+    MUL
+    PUSH 1
+    PUSH [3]
+    MUL
+    ADD
+
+    DIV
+    
+    PUSH 'X'
+    OUTC
+    POP
+    PUSH '2'
+    OUTC
+    POP
+    PUSH '='
+    OUTC
+    POP
+
+    OUT
+    POP
+
+    PUSH '\n'
+    OUTC
+    POP
+JMP case_end
+HERE case_end
+
+JMP __sqrt_end
+HERE sqrt
+    PUSH RAX
+    MOVE [100]
+    MOVE RAX
+    PUSH -1
+    HERE sqrt_loop_bgn
+        # Increment counter by one
+        PUSH 1
+        ADD
+
+        # Create counter duplicate
+        DUP
+        PUSH 1
+        ADD
+        DUP
+        MUL
+        # ^ is less than v
+        PUSH RAX
+        PUSH 1
+        ADD
+    JMPG sqrt_loop_bgn
+    PUSH [100]
+    MOVE RAX
+    RET
+HERE __sqrt_end
+
+END
