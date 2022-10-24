@@ -57,6 +57,7 @@ DEF_CMD(JMPG, {
 
     _LOG_EMPT_STACK_("JMPG[top]");
     stack_content_t arg_a = stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
+
     _LOG_EMPT_STACK_("JMPG[bottom]");
     stack_content_t arg_b = stack_get(STACK, ERRNO); stack_pop(STACK, ERRNO);
     
@@ -65,7 +66,9 @@ DEF_CMD(JMPG, {
 }, {
     int dest = 0;
     memcpy(&dest, ARG_PTR, sizeof(dest));
+
     SHIFT += (int)sizeof(dest);
+
     fprintf(OUT_FILE, "%d", dest);
 })
 
@@ -85,16 +88,22 @@ DEF_CMD(CALL, {
 }, {
     int dest = 0;
     memcpy(&dest, ARG_PTR, sizeof(dest));
+
     SHIFT += (int)sizeof(dest);
+
     stack_push(ADDR_STACK, (stack_content_t)EXEC_POINT + SHIFT, ERRNO);
+
     SHIFT = dest;
+
     _LOG_FAIL_CHECK_(SHIFT != 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "CALL argument was 0, terminating.\n");
     }, ERRNO, EFAULT);
 }, {
     int dest = 0;
     memcpy(&dest, ARG_PTR, sizeof(dest));
+
     SHIFT += (int)sizeof(dest);
+
     fprintf(OUT_FILE, "%d", dest);
 })
 
@@ -104,7 +113,9 @@ DEF_CMD(RET, {}, {
         shift = 0;
         break;
     }, ERRNO, EFAULT);
+
     uintptr_t dest = (uintptr_t) stack_get(ADDR_STACK, ERRNO);
     stack_pop(ADDR_STACK, ERRNO);
+
     SHIFT = (int)(dest - (uintptr_t)EXEC_POINT);
 }, {})
