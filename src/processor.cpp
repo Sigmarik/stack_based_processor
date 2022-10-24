@@ -99,7 +99,7 @@ void clear_console();
  */
 void draw_vmd(FrameBuffer* buffer);
 
-static const char PIX_STATES[] = R"($@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,"^`'. )";
+static const char PIX_STATES[] = R"( .'`^",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$)";
 
 static const int NUMBER_OF_OWLS = 10;
 
@@ -338,8 +338,7 @@ void draw_vmd(FrameBuffer* buffer) {
 
             int brightness = buffer->content[id_y * (int)buffer->width + id_x];
 
-            if (brightness < 0) brightness = 0;
-            if (brightness >= (int)sizeof(PIX_STATES)) brightness = (int)sizeof(PIX_STATES) - 1;
+            brightness = clamp(brightness, 0, (int)sizeof(PIX_STATES) - 2);
 
             putc(PIX_STATES[brightness], stdout);
         }

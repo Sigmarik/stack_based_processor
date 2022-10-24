@@ -44,3 +44,9 @@ void FrameBuffer_dtor(FrameBuffer* buffer) {
     buffer->width = 0;
     buffer->height = 0;
 }
+
+int clamp(const int value, const int left, const int right) {
+    if (value < left) return left;
+    if (value > right) return right;
+    return value;
+}

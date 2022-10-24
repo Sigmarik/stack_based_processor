@@ -56,11 +56,21 @@ void _MemorySegment_dump(MemorySegment* segment, unsigned int importance);
  */
 struct FrameBuffer {
     int* content = NULL;
-    size_t width = 32;
+    size_t width = 64;
     size_t height = 32;
 };
 
 void FrameBuffer_ctor(FrameBuffer* buffer);
 void FrameBuffer_dtor(FrameBuffer* buffer);
+
+/**
+ * @brief Limit specified value between left and right border.
+ * 
+ * @param value variable to check
+ * @param left left border
+ * @param right right border
+ * @return 
+ */
+int clamp(const int value, const int left, const int right);
 
 #endif

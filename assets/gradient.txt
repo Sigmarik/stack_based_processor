@@ -4,25 +4,55 @@ MOVE RAX
 MOVE RBX
 
 HERE loop_x_bgn
-    PUSH 10
-    OUTC
-    POP
-
     PUSH 0
     MOVE RBX
     HERE loop_y_bgn
-        PUSH '-'
-        OUTC
-        POP
-
+        PUSH 2
         PUSH RAX
         PUSH RBX
         SUB
+        DIV
 
         PUSH 2
         PUSH [3]
         DIV
         ADD
+
+        MOVE RCX
+
+        # Get dX^2
+        PUSH 200
+        PUSH 2
+        PUSH [1]
+        DIV
+        PUSH RAX
+        SUB
+        PUSH 100
+        MUL
+        DIV
+        DUP
+        MUL
+
+        # Get dY^2
+        PUSH 2
+        PUSH [2]
+        DIV
+        PUSH RBX
+        SUB
+        DUP
+        MUL
+
+        ADD
+        PUSH 100
+
+        JMPG case_sphere
+        JMP case_grad
+        HERE case_sphere
+            PUSH 0
+        JMP case_end
+        HERE case_grad
+            PUSH RCX
+        HERE case_end
 
         PUSH RAX
         PUSH RBX
