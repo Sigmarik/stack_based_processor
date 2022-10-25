@@ -130,6 +130,9 @@ HERE case_multiple_solutions
     OUTC
     POP
 
+    PUSH [3]
+    PUSH 0
+    JMPE case_end
 
     PUSH 2
     PUSH [0]
