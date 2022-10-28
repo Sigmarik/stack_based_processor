@@ -33,7 +33,7 @@ static const char* const STACK_STATUS_DESCR[] = {
     "Stack right canary is corrupt.",
     "Stack buffer left canary is corrupt.",
     "Stack buffer right canary is corrupt.",
-    "Stack hash was wrong."
+    "Stack hash was invalid."
 };
 
 #endif
