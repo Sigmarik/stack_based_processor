@@ -38,15 +38,6 @@ static const size_t STACK_START_SIZE = 1024;
 static const size_t ADDR_STACK_START_SIZE = 16;
 
 /**
- * @brief Print a bunch of owls.
- * 
- * @param argc unimportant
- * @param argv unimportant
- * @param argument unimportant
- */
-void print_owl(const int argc, void** argv, const char* argument);
-
-/**
  * @brief Print program label and build date/time to console and log.
  * 
  */
@@ -79,15 +70,6 @@ int execute_command(const char* prog_start, const char* ptr,
                     int* const err_code = NULL);
 
 /**
- * @brief Get the file name from the list of command line arguments.
- * 
- * @param argc argument count
- * @param argv argument values
- * @return const char* 
- */
-const char* get_file_name(const int argc, const char** argv);
-
-/**
  * @brief Make console empty.
  * 
  */
@@ -100,8 +82,6 @@ void clear_console();
 void draw_vmd(FrameBuffer* buffer);
 
 static const char PIX_STATES[] = R"( .'`^",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$)";
-
-static const int NUMBER_OF_OWLS = 10;
 
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
@@ -140,7 +120,7 @@ int main(const int argc, const char** argv) {
     if (ram.size > 2) ram.content[2] = (int)vmd.height;
     if (ram.size > 3) ram.content[3] = (int)sizeof(PIX_STATES);
 
-    const char* file_name = get_file_name(argc, argv);
+    const char* file_name = get_input_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
         printf("To execute program stored in a file run\n%s [file name]\n", argv[0]);
@@ -213,21 +193,6 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Execution finished, cleaning allocated memory...\n");
 
     return_clean(errno ? EXIT_FAILURE : EXIT_SUCCESS);
-}
-
-// Офигенно, ничего не менять.
-// Дополнил сову, сорри.
-void print_owl(const int argc, void** argv, const char* argument) {
-    UNUSE(argc); UNUSE(argv); UNUSE(argument);
-    printf("-Owl argument detected, dropping emergency supply of owls.\n");
-    for (int index = 0; index < NUMBER_OF_OWLS; index++) {
-        puts(R"(    A_,,,_A    )");
-        puts(R"(   ((O)V(O))   )");
-        puts(R"(  ("\"|"|"/")  )");
-        puts(R"(   \"|"|"|"/   )");
-        puts(R"(     "| |"     )");
-        puts(R"(      ^ ^      )");
-    }
 }
 
 void print_label() {
@@ -319,17 +284,6 @@ int execute_command(const char* prog_start, const char* ptr,
 }
 
 #undef DEF_CMD
-
-const char* get_file_name(const int argc, const char** argv) {
-    const char* file_name = NULL;
-
-    for (int argument_id = 1; argument_id < argc; ++argument_id) {
-        if (*argv[argument_id] == '-') continue;
-        file_name = argv[argument_id];
-    }
-
-    return file_name;
-}
 
 #ifdef __linux__
 void clear_console() {

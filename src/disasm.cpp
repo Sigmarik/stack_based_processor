@@ -38,15 +38,6 @@ static const size_t STACK_START_SIZE = 1024;
 static const size_t ADDR_STACK_START_SIZE = 16;
 
 /**
- * @brief Print a bunch of owls.
- * 
- * @param argc unimportant
- * @param argv unimportant
- * @param argument unimportant
- */
-void print_owl(const int argc, void** argv, const char* argument);
-
-/**
  * @brief Print program label and build date/time to console and log.
  * 
  */
@@ -71,27 +62,7 @@ size_t read_header(char* ptr, FILE* output, int* err_code = NULL);
  * @param err_code error code
  * @return size_t
  */
-int execute_command(const char* prog_start, const char* ptr, FILE* file, int* const err_code = NULL);
-
-/**
- * @brief Get the file name from the list of command line arguments.
- * 
- * @param argc argument count
- * @param argv argument values
- * @return const char* 
- */
-const char* get_file_name(const int argc, const char** argv);
-
-/**
- * @brief Get the output file name from the list of command line arguments.
- * 
- * @param argc argument count
- * @param argv argument values
- * @return const char* 
- */
-const char* get_output_file_name(const int argc, const char** argv);
-
-static const int NUMBER_OF_OWLS = 10;
+int process_command(const char* prog_start, const char* ptr, FILE* file, int* const err_code = NULL);
 
 const char* DEFAULT_OUTPUT_NAME = "program.txt";
 
@@ -110,7 +81,7 @@ int main(const int argc, const char** argv) {
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
-    const char* file_name = get_file_name(argc, argv);
+    const char* file_name = get_input_file_name(argc, argv);
     _LOG_FAIL_CHECK_(file_name, "error", ERROR_REPORTS, {
         printf("File was not specified, terminating...\n");
         printf("To disassemble the program stored in a file run\n%s [file name]\n", argv[0]);
@@ -168,7 +139,7 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Starting disassembling commands...\n");
     int delta = 0;
-    while ((delta = execute_command(content, pointer, output, &errno)) != 0) {
+    while ((delta = process_command(content, pointer, output, &errno)) != 0) {
         pointer += delta;
         if (!(pointer > content && pointer < content + size)) break;
     }
@@ -176,21 +147,6 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Disassembly complete.\n");
 
     return_clean(errno ? EXIT_FAILURE : EXIT_SUCCESS);
-}
-
-// Офигенно, ничего не менять.
-// Дополнил сову, сорри.
-void print_owl(const int argc, void** argv, const char* argument) {
-    UNUSE(argc); UNUSE(argv); UNUSE(argument);
-    printf("-Owl argument detected, dropping emergency supply of owls.\n");
-    for (int index = 0; index < NUMBER_OF_OWLS; index++) {
-        puts(R"(    A_,,,_A    )");
-        puts(R"(   ((O)V(O))   )");
-        puts(R"(  ("\"|"|"/")  )");
-        puts(R"(   \"|"|"|"/   )");
-        puts(R"(     "| |"     )");
-        puts(R"(      ^ ^      )");
-    }
 }
 
 void print_label() {
@@ -234,7 +190,7 @@ case CMD_##name: {fprintf(file, #name " "); disasm_script; putc('\n', file);} br
 #define ERRNO err_code
 #define OUT_FILE file
 
-int execute_command(const char* prog_start, const char* ptr, FILE* file, int* const err_code) {
+int process_command(const char* prog_start, const char* ptr, FILE* file, int* const err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 
     log_printf(STATUS_REPORTS, "status", "Executing command %02X (mask %d) at 0x%0*X.\n", 
@@ -258,28 +214,3 @@ int execute_command(const char* prog_start, const char* ptr, FILE* file, int* co
 }
 
 #undef DEF_CMD
-
-const char* get_file_name(const int argc, const char** argv) {
-    const char* file_name = NULL;
-
-    for (int argument_id = 1; argument_id < argc; ++argument_id) {
-        if (*argv[argument_id] == '-') continue;
-        file_name = argv[argument_id];
-    }
-
-    return file_name;
-}
-
-const char* get_output_file_name(const int argc, const char** argv) {
-    const char* file_name = NULL;
-
-    bool enc_first_name = false;
-    for (int argument_id = 1; argument_id < argc; ++argument_id) {
-        if (*argv[argument_id] == '-') continue;
-        file_name = argv[argument_id];
-        if (enc_first_name) return file_name;
-        else enc_first_name = true;
-    }
-
-    return NULL;
-}
