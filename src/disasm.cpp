@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <clocale>
 #include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -30,12 +29,7 @@
 
 #define DISASSEMBLER
 
-typedef long long stack_content_t;
-stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
-#include "lib/stackworks.h"
-
-static const size_t STACK_START_SIZE = 1024;
-static const size_t ADDR_STACK_START_SIZE = 16;
+#include "config.h"
 
 /**
  * @brief Print program label and build date/time to console and log.
@@ -64,12 +58,10 @@ size_t read_header(char* ptr, FILE* output, int* err_code = NULL);
  */
 int process_command(const char* prog_start, const char* ptr, FILE* file, int* const err_code = NULL);
 
-const char* DEFAULT_OUTPUT_NAME = "program.txt";
-
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
 
-    // Ignore everything less or equaly important as status reports.
+    // Ignore everything less or equally important as status reports.
     static unsigned int log_threshold = STATUS_REPORTS + 1;
 
     static const struct ActionTag line_tags[] = {

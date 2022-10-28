@@ -51,7 +51,7 @@ void MemorySegment_dtor(MemorySegment* segment);
 void _MemorySegment_dump(MemorySegment* segment, unsigned int importance);
 
 /**
- * @brief Pseudo-2D array with defined dimentions.
+ * @brief Pseudo-2D array with defined dimensions.
  * 
  */
 struct FrameBuffer {

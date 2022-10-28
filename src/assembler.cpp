@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <clocale>
 #include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -28,6 +27,8 @@
 #include "utils/argworks.h"
 
 #define ASSEMBLER
+
+#include "config.h"
 
 /**
  * @brief Print program label and build date/time to console and log.
@@ -125,11 +126,6 @@ void add_label(LabelSet* labels, hash_t hash, uintptr_t point, int* const err_co
  */
 uintptr_t get_label(LabelSet* labels, hash_t hash, int* const err_code = NULL);
 
-const size_t MAX_COMMAND_SIZE = 128;
-
-#define DEFAULT_OUTPUT_NAME "a.bin"
-#define DEFAULT_LISTING_NAME "listing.txt"
-
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
 
@@ -172,7 +168,7 @@ int main(const int argc, const char** argv) {
 
     const char* out_name = get_output_file_name(argc, argv);
     if (out_name == NULL) {
-        out_name = DEFAULT_OUTPUT_NAME;
+        out_name = DEFAULT_BINARY_OUT_NAME;
     }
 
     log_printf(STATUS_REPORTS, "status", "Opening input file %s.\n", file_name);
@@ -297,7 +293,7 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
 
     int shift = 0;
     char code[10] = "";
-    char sequence[MAX_COMMAND_SIZE] = "";
+    char sequence[MAX_CMD_BITE_LENGTH] = "";
     size_t cmd_size = 0;
     hash_t hash = 0;
     

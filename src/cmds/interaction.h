@@ -16,7 +16,7 @@ DEF_CMD(DRAW, {}, {
     draw_vmd(&VMD); //* Defined in processor.cpp
 }, {})
 
-DEF_CMD(RINT, {}, {
+DEF_CMD(IN, {}, {
     int input = 0;
     scanf("%d", &input);
     PUSH(input);

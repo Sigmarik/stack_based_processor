@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <clocale>
 #include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -30,12 +29,9 @@
 
 #define PROCESSOR
 
-typedef long long stack_content_t;
-stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
-#include "lib/stackworks.h"
+#include "config.h"
 
-static const size_t STACK_START_SIZE = 1024;
-static const size_t ADDR_STACK_START_SIZE = 16;
+#include "lib/stackworks.h"
 
 /**
  * @brief Print program label and build date/time to console and log.
@@ -81,12 +77,10 @@ void clear_console();
  */
 void draw_vmd(FrameBuffer* buffer);
 
-static const char PIX_STATES[] = R"( .'`^",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$)";
-
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
 
-    // Ignore everything less or equaly important as status reports.
+    // Ignore everything less or equally important as status reports.
     unsigned int log_threshold = STATUS_REPORTS + 1;
     FrameBuffer vmd = {};
     MemorySegment ram = {};

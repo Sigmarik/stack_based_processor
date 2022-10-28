@@ -5,7 +5,7 @@ POP
 PUSH '='
 OUTC
 POP
-RINT
+IN
 MOVE [0]
 
 PUSH 'B'
@@ -14,7 +14,7 @@ POP
 PUSH '='
 OUTC
 POP
-RINT
+IN
 MOVE [1]
 
 PUSH 'C'
@@ -23,7 +23,7 @@ POP
 PUSH '='
 OUTC
 POP
-RINT
+IN
 MOVE [2]
 
 # Calculate descr and push it to [3]
