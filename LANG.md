@@ -23,4 +23,4 @@ These are commands recognized by the assembler program. Each command should be w
 19. **DRAW** - draw video memory content to the screen as ASCII-art.
 20. **CALL *argument ((string) label name or (int) ip delta)*** - perform jump and add current IP to the address stack.
 21. **RET** - return to the last position mention in address stack.
-22. **RINT** - read integer from the console and put it into the stack.
+22. **IN** - read integer from the console and put it into the stack.

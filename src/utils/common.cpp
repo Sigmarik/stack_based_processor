@@ -52,3 +52,46 @@ int clamp(const int value, const int left, const int right) {
     if (value > right) return right;
     return value;
 }
+
+const int NUMBER_OF_OWLS = 10;
+
+// Офигенно, ничего не менять.
+// Дополнил сову, сорри.
+void print_owl(const int argc, void** argv, const char* argument) {
+    UNUSE(argc); UNUSE(argv); UNUSE(argument);
+    printf("-Owl argument detected, dropping emergency supply of owls.\n");
+    for (int index = 0; index < NUMBER_OF_OWLS; index++) {
+        puts(R"(    A_,,,_A    )");
+        puts(R"(   ((O)V(O))   )");
+        puts(R"(  ("\"|"|"/")  )");
+        puts(R"(   \"|"|"|"/   )");
+        puts(R"(     "| |"     )");
+        puts(R"(      ^ ^      )");
+    }
+}
+
+const char* get_input_file_name(const int argc, const char** argv) {
+    const char* file_name = NULL;
+
+    for (int argument_id = 1; argument_id < argc; ++argument_id) {
+        if (*argv[argument_id] == '-') continue;
+        file_name = argv[argument_id];
+        break;
+    }
+
+    return file_name;
+}
+
+const char* get_output_file_name(const int argc, const char** argv) {
+    const char* file_name = NULL;
+
+    bool enc_first_name = false;
+    for (int argument_id = 1; argument_id < argc; ++argument_id) {
+        if (*argv[argument_id] == '-') continue;
+        file_name = argv[argument_id];
+        if (enc_first_name) return file_name;
+        else enc_first_name = true;
+    }
+
+    return NULL;
+}

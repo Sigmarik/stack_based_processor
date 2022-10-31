@@ -39,18 +39,6 @@ static const stack_content_t ___STACK_CONTENT_OR_POISON_IS_NOT_DEFINED___ = STAC
 #define ON_HASH(...)
 #endif
 
-// TODO: Make a separate structure for stack statuses.
-static const char* const STACK_STATUS_DESCR[] = {
-    "Stack pointer is invalid.",
-    "Stack size is bigger than its capacity.",
-    "Stack has no buffer.",
-    "Stack left canary is corrupt.",
-    "Stack right canary is corrupt.",
-    "Stack buffer left canary is corrupt.",
-    "Stack buffer right canary is corrupt.",
-    "Stack hash was wrong."
-};
-
 #define STACK_CANARY_VALUE "CANARY"
 typedef char stack_canary_t[7];
 typedef hash_t stack_hash_t;

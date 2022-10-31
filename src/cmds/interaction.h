@@ -17,7 +17,7 @@ DEF_CMD(DRAW, {}, {
     // TODO: oh, you learned how to make functions! Thank you, do this more often, please!! (not really a TODO)
 }, {})
 
-DEF_CMD(RINT, {}, {
+DEF_CMD(IN, {}, {
     int input = 0;
     scanf("%d", &input);
     PUSH(input);

@@ -53,7 +53,7 @@ void MemorySegment_dtor(MemorySegment* segment);
 void _MemorySegment_dump(MemorySegment* segment, unsigned int importance);
 
 /**
- * @brief Pseudo-2D array with defined dimentions.
+ * @brief Pseudo-2D array with defined dimensions.
  * 
  */
 struct FrameBuffer { // TODO: doesn't need to be called FrameBuffer, this is just generic 2DArray
@@ -77,5 +77,32 @@ void FrameBuffer_dtor(FrameBuffer* buffer);
 int clamp(const int value, const int left, const int right);
 // TODO: this could be moved in your-math.h, creating common.h
 //       for such things is a bit low-effort 
+
+/**
+ * @brief Print a bunch of owls.
+ * 
+ * @param argc unimportant
+ * @param argv unimportant
+ * @param argument unimportant
+ */
+void print_owl(const int argc, void** argv, const char* argument);
+
+/**
+ * @brief Get the input file name from the list of command line arguments.
+ * 
+ * @param argc argument count
+ * @param argv argument values
+ * @return const char* 
+ */
+const char* get_input_file_name(const int argc, const char** argv);
+
+/**
+ * @brief Get the output file name from the list of command line arguments.
+ * 
+ * @param argc argument count
+ * @param argv argument values
+ * @return const char* 
+ */
+const char* get_output_file_name(const int argc, const char** argv);
 
 #endif

@@ -35,4 +35,16 @@ enum STACK_STATUSES { // TODO: Enums are usually named the same way as structs a
     STACK_HASH_FAILURE = 1 << 7,
 };
 
+// TODO: Make a separate structure for stack statuses.
+static const char* const STACK_STATUS_DESCR[] = {
+    "Stack pointer is invalid.",
+    "Stack size is bigger than its capacity.",
+    "Stack has no buffer.",
+    "Stack left canary is corrupt.",
+    "Stack right canary is corrupt.",
+    "Stack buffer left canary is corrupt.",
+    "Stack buffer right canary is corrupt.",
+    "Stack hash was invalid."
+};
+
 #endif

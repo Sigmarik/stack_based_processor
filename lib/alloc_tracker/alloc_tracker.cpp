@@ -91,8 +91,10 @@ static void __pop_allocation(Allocation* ptr) { // TODO: why name static in .cpp
 void _track_allocation(void* subject, dtor_t *dtor) {
     Allocation* next_free = GLB_free_cell->_next;
     *GLB_free_cell = Allocation {subject, dtor, GLB_allocations, GLB_allocations->_prev};
+
     GLB_allocations->_prev->_next = GLB_free_cell;
     GLB_allocations->_prev = GLB_free_cell;
+
     log_printf(STATUS_REPORTS, "status", "Started tracking address %p at index %ld.\n", subject, GLB_free_cell - GLB_allocations);
     GLB_free_cell = next_free;
 }

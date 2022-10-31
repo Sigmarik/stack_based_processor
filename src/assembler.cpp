@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <clocale>
 #include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -29,38 +28,13 @@
 
 #define ASSEMBLER
 
-/**
- * @brief Print a bunch of owls.
- * 
- * @param argc unimportant
- * @param argv unimportant
- * @param argument unimportant
- */
-void print_owl(const int argc, void** argv, const char* argument);
+#include "config.h"
 
 /**
  * @brief Print program label and build date/time to console and log.
  * 
  */
 void print_label();
-
-/**
- * @brief Get the input file name from the list of command line arguments.
- * 
- * @param argc argument count
- * @param argv argument values
- * @return const char* 
- */
-const char* get_input_file_name(const int argc, const char** argv);
-
-/**
- * @brief Get the output file name from the list of command line arguments.
- * 
- * @param argc argument count
- * @param argv argument values
- * @return const char* 
- */
-const char* get_output_file_name(const int argc, const char** argv);
 
 /**
  * @brief Print binary header to the file.
@@ -173,13 +147,6 @@ void add_label(LabelSet* labels, hash_t hash, uintptr_t point, int* const err_co
  */
 uintptr_t get_label(LabelSet* labels, hash_t hash, int* const err_code = NULL);
 
-const size_t MAX_COMMAND_SIZE = 128;
-
-const int NUMBER_OF_OWLS = 10; // TODO: NUMBER_OF_OWLS = INT_MAX; // Not enough owls!!
-
-#define DEFAULT_OUTPUT_NAME "a.bin"
-#define DEFAULT_LISTING_NAME "listing.txt"
-
 int main(const int argc, const char** argv) {
     atexit(log_end_program);
 
@@ -249,7 +216,7 @@ int main(const int argc, const char** argv) {
 
     const char* out_name = get_output_file_name(argc, argv);
     if (out_name == NULL) {
-        out_name = DEFAULT_OUTPUT_NAME; // TODO: macro get_or_default?
+        out_name = DEFAULT_BINARY_OUT_NAME; // TODO: macro get_or_default?
     }
 
     log_printf(STATUS_REPORTS, "status", "Opening input file %s.\n", file_name);
@@ -327,57 +294,11 @@ int main(const int argc, const char** argv) {
     return_clean(errno == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 
-// TODO: This is so common, should be moved in library by now :)
-
-// Офигенно, ничего не менять.
-// Дополнил сову, сорри.
-void print_owl(const int argc, void** argv, const char* argument) {
-    UNUSE(argc); UNUSE(argv); UNUSE(argument);
-    printf("-Owl argument detected, dropping emergency supply of owls.\n");
-    for (int index = 0; index < NUMBER_OF_OWLS; index++) {
-        puts(R"(    A_,,,_A    )");
-        puts(R"(   ((O)V(O))   )");
-        puts(R"(  ("\"|"|"/")  )");
-        puts(R"(   \"|"|"|"/   )");
-        puts(R"(     "| |"     )");
-        puts(R"(      ^ ^      )");
-    }
-}
-
 void print_label() {
     printf("Assembler for a stack-based processor by Ilya Kudryashov.\n");
     printf("Program assembles human-readable code into binary program.\n");
     printf("Build from\n%s %s\n", __DATE__, __TIME__);
     log_printf(ABSOLUTE_IMPORTANCE, "build info", "Build from %s %s.\n", __DATE__, __TIME__);
-}
-
-// TODO: seems to me that getting input file name is useful and
-//       common for CLI apps in general, can you move this in argparser.h?
-const char* get_input_file_name(const int argc, const char** argv) {
-    const char* file_name = NULL;
-
-    for (int argument_id = 1; argument_id < argc; ++argument_id) {
-        if (*argv[argument_id] == '-') continue;
-        file_name = argv[argument_id];
-        break;
-    }
-
-    return file_name;
-}
-
-// TODO: same thing with output file, lots of CLI programs do this, extract
-const char* get_output_file_name(const int argc, const char** argv) {
-    const char* file_name = NULL;
-
-    bool enc_first_name = false;
-    for (int argument_id = 1; argument_id < argc; ++argument_id) {
-        if (*argv[argument_id] == '-') continue;
-        file_name = argv[argument_id];
-        if (enc_first_name) return file_name;
-        else enc_first_name = true;
-    }
-
-    return NULL;
 }
 
 void put_header(FILE* output) {
@@ -438,10 +359,11 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
     sscanf(line, " %c", &first_char);
 
     int shift = 0;
-    char code[10] = ""; // TODO: move declaration closer to usage!
-    char sequence[MAX_COMMAND_SIZE] = ""; // TODO: same thing, define immediately before usage
-    size_t cmd_size = 0; // TODO: same
-    hash_t hash = 0; // TODO: thing!
+     // TODO: move declarations closer to usages!
+    char code[10] = "";
+    char sequence[MAX_CMD_BITE_LENGTH] = "";
+    size_t cmd_size = 0;
+    hash_t hash = 0;
     
     if (*line != '\0' && first_char != CMD_COMMENT_CHAR) do {
 
