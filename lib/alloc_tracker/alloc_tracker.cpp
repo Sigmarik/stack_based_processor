@@ -8,6 +8,45 @@ static struct Allocation {
     Allocation* _next = NULL;
     Allocation* _prev = NULL;
 } GLB_allocations[MAX_ALLOCATIONS] = {};
+// TODO: you can incorporate this list in allocation itself
+//
+// For example,
+//
+// // Take allocation in your own hands, allocate more than user needed:
+// void *new_buffer = malloc(required_size + sizeof(allocation_header));
+//
+// // Write special header describing current allocation:
+// *(allocation_header*) ptr = (allocation_header) {
+//     .next = list_head, // link list to previous allocation
+//     // ... // optional information you might want (e.g. size)
+// } ;
+//
+// list_head = new_buffer; // update head
+//
+// // Return moved pointer to your user:
+// return (char*) new_buffer + sizeof(allocation_header);
+
+// This way you can avoid having a strict max number of allocations
+// you have now, and an empty list, that's unused when there's less
+
+// Than you can even extract this "head" in it's own type, and make
+// many allocation cleaners at the same time!
+
+// Like so:
+
+// allocation_tracker cleaner_for_xs = {};
+// allocation_tracker cleaner_for_ys = {};
+// ... 
+
+// track_allocation(&cleaner_for_xs, x);
+// ...
+// track_allocation(&cleaner_for_ys, y);
+// ...
+// track_allocation(&cleaner_for_xs, x);
+
+// free_all(&cleaner_for_ys); // I think you get the idea!
+
+// Also, only 1024 is not so generous of you :)
 
 static Allocation* GLB_free_cell = GLB_allocations + 1;
 
@@ -37,7 +76,8 @@ static char __allocations_filler = __fill_allocations();
  * 
  * @param ptr pointer to the element
  */
-static void __pop_allocation(Allocation* ptr) {
+static void __pop_allocation(Allocation* ptr) { // TODO: why name static in .cpp with underscores?)
+                                                //       It's not like anyone else will have to see it)
     ptr->subject = NULL;
     ptr->dtor = NULL;
 
@@ -63,6 +103,7 @@ void untrack_allocation(void* subject) {
     for (Allocation* ptr = GLB_allocations->_next; ptr != GLB_allocations; ptr = ptr->_next) {
 
         if (ptr->subject == subject) { __pop_allocation(ptr); break; }
+        // TODO:                     ^~ lines are free, aren't they?)
     }
 }
 
@@ -90,10 +131,11 @@ void free_all_allocations() {
 void free_var(void** ptr) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return, &errno, EFAULT);
     log_printf(STATUS_REPORTS, "status", "Freeing address %p.\n", *ptr);
-    if (*ptr) free(*ptr);
+    if (*ptr) free(*ptr); // TODO: you've even wrote a function for this below, not to mention it's
+                          //       does it already... Why don't you use it?
     *ptr = NULL;
 }
 
 void void_free(void* ptr) {
-    if (ptr) free(ptr);
+    if (ptr) free(ptr); // TODO: That's exactly what free already does
 }

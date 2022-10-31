@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include "util/dbg/debug.h"
 
-size_t flength(int fd) {
-    struct stat buffer;
+size_t flength(int fd) { // TODO: I'd just name it get_file_length choosing clarity over
+    struct stat buffer;  //       over following arcane stdlib's naming conventions :)
     fstat(fd, &buffer);
     return (size_t)buffer.st_size;
 }

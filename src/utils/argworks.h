@@ -14,12 +14,12 @@
 
 #include "common.h"
 
-enum USAGE_TYPES {
+enum USAGE_TYPES { // TODO: Read about enum naming I wrote in stackreports.h
     USE_REGISTER = 1 << 0,
     USE_MEMORY = 1 << 1,
 };
 
-struct PPArgument {
+struct PPArgument { // TODO: What is PPA? Don't use confusing abbrivations, just use full names
     int value = 0;
     char props = 0;
 };

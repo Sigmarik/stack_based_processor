@@ -11,6 +11,14 @@
 
 #include "common_flags.h"
 
+// TODO: including headers in the middle of files isn't
+//       that common or "pretty", avoid if you can
+
+// It's hard to process for language servers, completely
+// losses context (e.g. what is gen_listing and where to find it)
+
+// You'll quickly end up greping over your source code and mixing
+// and matching this things to finally get them to work
 { {'L', ""},    { bundle(1, &gen_listing),      1, edit_int },
     "set if program should generate listing or not.\n"
     "\tDoes not check if integer was specified." },

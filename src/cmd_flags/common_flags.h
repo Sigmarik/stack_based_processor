@@ -9,6 +9,13 @@
  * 
  */
 
+// TODO: read assembler_flags.h
+
+// TODO: also, I would change extension of this special "header"
+//       files, so it's clear they can't be used as usual.
+
+// E.g. ".inc" is a common one.
+
 { {'O', "owl"}, { {}, 0, print_owl },
     "print 10 owls to the screen." },
 

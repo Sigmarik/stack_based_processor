@@ -76,7 +76,10 @@ struct CodeLabel {
 struct LabelSet {
     CodeLabel* array = NULL;
     size_t size = 0;
-    size_t max_size = 1024;
+    size_t max_size = 1024; // TODO: why store max_size in structure
+                            //       if you clearly don't have intent to change it
+                            //       (you are using it just in constructor, might
+                            //        as well just pass it there, or use stack!)
 };
 
 void LabelSet_ctor(LabelSet* set);
@@ -115,6 +118,24 @@ void process_line(LabelSet* labels, const char* line, FILE* listing = NULL, int*
  * @param err_code variable to use as errno
  */
 void add_label(LabelSet* labels, hash_t hash, uintptr_t point, int* const err_code = NULL);
+// TODO: avoid consts on arguments in function forward-declarations ^~~~~,
+//       because it doesn't add any clarity to a programmer reading your code,
+//       as you can easily do:
+//
+// void foo(int* const ptr) {
+//     int* copied_ptr = ptr; // and than mutate copied ptr, no one forbids! 
+// }
+//
+// And it can clutter signature quite a bit,
+// void add_label(label_set* const labels, const hash_t hash, const uintptr_t point, int* const err_code);
+//
+// And:
+// void add_label(label_set* labels, hash_t hash, uintptr_t point, int* err_code);
+//
+// The later one has a lot less "noise", and at the same time doesn't really lose any information or
+// clarity compared to first one, considering what I've said before. Agreed?
+//
+// note: talking only about primitive types, in C++'s classes it's a whole different story.
 
 /**
  * @brief Get the label object from label name hash.
@@ -131,23 +152,50 @@ int main(const int argc, const char** argv) {
 
     //* Ignore everything less or equaly important as status reports.
     static unsigned int log_threshold = STATUS_REPORTS + 1;
-    static int gen_listing = 1;
-    //* Maximum number of labels.
+    static int gen_listing = 1; // TODO: use bool :)
+    // It's much more descriptive!
+    // Include stdbool.h if you want C compatibility or don't, since
+    // you already use C++ compiler and it has them built in.
+
+
+    //* Maximum number of labels. TODO: misplaced? variable "labels" isn't
+    //                                  "maximum number of labels", because it ain't a number.
     static LabelSet labels = {};
     //* Output file size.
     static size_t out_size = 0xFFFF;
+
+    // TODO: Why do you copy listing_name? You are never gonna change it.
+
+    //       If you didn't, you'd be able to use const char* vairable,
+    //       avoiding all this macro nonsense to support this copy initialization.
     static char listing_name[1024] = DEFAULT_LISTING_NAME;
 
     ActionTag line_tags[] = {
         #include "cmd_flags/assembler_flags.h"
     };
     const int number_of_tags = sizeof(line_tags) / sizeof(*line_tags);
+    // TODO:                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //                         You can roll a macro ARRAY_SIZE and avoid code
+    //                         repetition, also making it more descriptive.
 
+    // Now you are using this construction in 4 places.
+
+    // TODO: you are repeating pretty much the same thing in lots of places?
+    //       Time to move you main in external library?)
+
+    // You could, for example:
+
+    //       #include "cli-app.h" // includes main which does all the heavy lifting
+    //                               with parsing args and printing owls, but requires
+    //                               you to implement your own function e.g. cli_main
+    //                               that implements actual program logic.
     parse_args(argc, argv, number_of_tags, line_tags);
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
-    LabelSet_ctor(&labels);
+    LabelSet_ctor(&labels); // TODO: Try to move construction as close to declaration
+                            //       as you can, because now you've separated them for
+                            //       no reason whatsoever.
     _LOG_FAIL_CHECK_(labels.array, "error", ERROR_REPORTS, return EXIT_FAILURE, &errno, ENOMEM);
 
     track_allocation(&labels, (dtor_t*)LabelSet_dtor);
@@ -168,7 +216,7 @@ int main(const int argc, const char** argv) {
 
     const char* out_name = get_output_file_name(argc, argv);
     if (out_name == NULL) {
-        out_name = DEFAULT_BINARY_OUT_NAME;
+        out_name = DEFAULT_BINARY_OUT_NAME; // TODO: macro get_or_default?
     }
 
     log_printf(STATUS_REPORTS, "status", "Opening input file %s.\n", file_name);
@@ -220,6 +268,14 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Entering first pass...\n");
 
+    // TODO: so much text, the main action: "assemble" got lost in the woods
+    //       Can you improve upon that? Make main smaller by moving all stages:
+    // 
+    //       + general CLI app setup
+    //       + parsing specific arguments 
+    //       + opening necessary files
+    //       + setting up listing
+    //       + assembling...
     assemble(&labels, listing, lines, line_count, &errno);
 
     log_printf(STATUS_REPORTS, "status", "Entering final pass...\n");
@@ -254,12 +310,19 @@ void put_header(FILE* output) {
 
 
 void LabelSet_ctor(LabelSet* set) {
+    // TODO: looks like LabelSet is just an array of labels and can
+    //       be easily generalized in generic array.
     set->array = (CodeLabel*)calloc(set->max_size, sizeof(*set->array));
+    //                              ^~~~~~~~~~~~~ always max_size?(
+    //                              can't you use your stack for this?)
     set->size = 0;
 }
 
 void LabelSet_dtor(LabelSet* set) {
+    // TODO: this logic of perfoming no action if ptr is NULL is already inscribed in free,
+    // and is well-defined behaviour, no need for a second branch))
     if (set->array) free(set->array);
+
     set->array = NULL;
     set->size = 0;
 }
@@ -274,12 +337,16 @@ void assemble(LabelSet* labels, FILE* listing, char** lines, size_t line_count, 
 
 #define DEF_CMD(name, parse_script, exec_script, disasm_script) \
     if (hash == CMD_HASHES[CMD_##name]) {sequence[0] = (CMD_##name << 2); ++cmd_size; parse_script;} else
+//                                      ^~                              ^~          ^~            ^~
+// TODO: why not write it with more spaces and on separate lines? Make it readable!
 
+// TODO: move all macros as close to usage, as possible. This is too far!
 #define ARG_PTR                 ( line + shift )
 #define GET_LABEL(arg)          get_label(arg, err_code)
 #define CUR_ID                  ( output_content.size + HEADER_SIZE )
 #define BUF_PTR                 sequence
 #define BUF_WRITE(ptr, length)  { memcpy(sequence + cmd_size, ptr, length); cmd_size += length; }
+// TODO:                        ^~                                                             ^~ wrap in do...while
 #define ERRNO                   err_code
 #define LABEL_LIST              labels
 
@@ -292,6 +359,7 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
     sscanf(line, " %c", &first_char);
 
     int shift = 0;
+     // TODO: move declarations closer to usages!
     char code[10] = "";
     char sequence[MAX_CMD_BITE_LENGTH] = "";
     size_t cmd_size = 0;
@@ -302,11 +370,12 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
         sscanf(line, "%s%n", code, &shift);
         hash = get_hash(code, code + strlen(code));
 
-        if (hash == CMD_LABEL_HASH) {
+        if (hash == CMD_LABEL_HASH) { // TODO: extract!
             char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
             sscanf(line + shift, "%s", lbl_name);
             
             hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+            // Why ^~~~~~~~ are you calculating hash outside of add_label? TODO: ?
             add_label(labels, lbl_hash, output_content.size + HEADER_SIZE, err_code);
             
             log_printf(STATUS_REPORTS, "status", "Label %s was set to %0*X.\n", lbl_name, sizeof(uintptr_t), output_content.size);
@@ -315,9 +384,10 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
         }
 
         #include "cmddef.h"
+        // TODO: undef all utility macros you've created (look in cmddef.h for more recomendations)
 
         if_cmd_not_defined log_printf(ERROR_REPORTS, "error", "Unknown command %s.\n", code);
-    } while (0);
+    } while (0); // TODO: this is a huge sign to you that this should become a function! *chuckle*
 
     log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
     memcpy(output_content.content + output_content.size, sequence, cmd_size);
@@ -327,6 +397,7 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
         fprintf(listing, "| %-36.36s  | [0x%0*lX] ", line, (int)sizeof(uintptr_t), output_content.size - cmd_size + HEADER_SIZE);
         for (int id = 0; id < (int)cmd_size; ++id) {
             fprintf(listing, " %02X", (unsigned int)sequence[id] & 0xFF);
+            // TODO:                                ^~~~~~~~~~~~~~~~~~~ extract!
         }
         fputc('\n', listing);
     }
@@ -335,6 +406,8 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
 #undef DEF_CMD
 
 void add_label(LabelSet* labels, hash_t hash, uintptr_t point, int* const err_code) {
+    // TODO: why const here but not in all other places:            ^~~~~?
+
     _LOG_FAIL_CHECK_(labels->array, "error", ERROR_REPORTS, return, err_code, ENOENT);
     _LOG_FAIL_CHECK_(labels->size < labels->max_size, "error", ERROR_REPORTS, return, err_code, ENOMEM);
 
@@ -345,7 +418,7 @@ void add_label(LabelSet* labels, hash_t hash, uintptr_t point, int* const err_co
         }
     }
 
-    labels->array[labels->size].hash  = hash;
+    labels->array[labels->size].hash  = hash; // TODO: use named designator!
     labels->array[labels->size].point = point;
     ++labels->size;
 }
@@ -360,4 +433,5 @@ uintptr_t get_label(LabelSet* labels, hash_t hash, int* const err_code) {
     int status = 0;
     add_label(labels, hash, 0, &status);
     return status == 0 ? labels->array[labels->size - 1].point : 0;
+    // TODO:                                                     ^ zero in case of failure?!
 }

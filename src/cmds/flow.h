@@ -6,7 +6,7 @@ DEF_CMD(END, {}, {
 
 DEF_CMD(ABORT, {}, {
     shift = 0;
-    if (err_code) *err_code = EAGAIN;
+    if (err_code) *err_code = EAGAIN; // TODO: code repetition
 }, {})
 
 DEF_CMD(JMP, {
@@ -19,6 +19,7 @@ DEF_CMD(JMP, {
         sscanf(ARG_PTR, "%s", lbl_name);
         hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
         argument = (int)get_label(LABEL_LIST, lbl_hash, ERRNO) - (int)CUR_ID;
+        // TODO: code repetition...
     }
 
     BUF_WRITE(&argument, sizeof(argument));
@@ -32,13 +33,14 @@ DEF_CMD(JMP, {
 }, {
     int dest = 0;
     memcpy(&dest, ARG_PTR, sizeof(dest));
-    SHIFT += (int)sizeof(dest);
-    fprintf(OUT_FILE, "%d", dest);
+    SHIFT += (int)sizeof(dest); // TODO: extreme repetition...
+    fprintf(OUT_FILE, "%d", dest); 
 })
 
 DEF_CMD(CALL, {
-    char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
-    int argument = 0;
+    char lbl_name[LABEL_MAX_NAME_LENGTH] = ""; // TODO: look same thing 3rd time, coool! (not really)
+    int argument = 0;                          //       You see, coming up with a way to do it without repetition
+                                               //       is the real challange that should have been addressed here!
 
     sscanf(ARG_PTR, "%d", &argument);
 
@@ -51,7 +53,7 @@ DEF_CMD(CALL, {
     BUF_WRITE(&argument, sizeof(argument));
 }, {
     int dest = 0;
-    memcpy(&dest, ARG_PTR, sizeof(dest));
+    memcpy(&dest, ARG_PTR, sizeof(dest)); // TODO: I'm tired, it's all the same!!
 
     SHIFT += (int)sizeof(dest);
 
