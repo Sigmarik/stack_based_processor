@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include "util/dbg/debug.h"
 
-size_t flength(int fd) { // TODO: I'd just name it get_file_length choosing clarity over
-    struct stat buffer;  //       over following arcane stdlib's naming conventions :)
+size_t get_file_length(int fd) {
+    struct stat buffer;
     fstat(fd, &buffer);
     return (size_t)buffer.st_size;
 }
@@ -14,7 +14,7 @@ size_t flength(int fd) { // TODO: I'd just name it get_file_length choosing clar
 size_t parse_lines(FILE* file, char** *text, char* *buffer, int* error_code) {
     _LOG_FAIL_CHECK_(file, "error", ERROR_REPORTS, return 0, error_code, EFAULT);
 
-    size_t file_size = flength(fileno(file));
+    size_t file_size = get_file_length(fileno(file));
 
     size_t line_count = 1;
 
@@ -53,7 +53,7 @@ void fclose_var(FILE** file_var) {
 
 void close_var(int* fd_var) {
     _LOG_FAIL_CHECK_(fd_var, "error", ERROR_REPORTS, return, &errno, EFAULT);
-    log_printf(STATUS_REPORTS, "status", "Closing file %p.\n", *fd_var);
+    log_printf(STATUS_REPORTS, "status", "Closing file %D.\n", *fd_var);
     if (*fd_var) close(*fd_var);
     *fd_var = 0;
 }

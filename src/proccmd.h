@@ -17,7 +17,7 @@
 static const char CMD_COMMENT_CHAR = '#';
 
 static const char CMD_LABEL[] = "HERE";
-static hash_t CMD_LABEL_HASH = get_hash(CMD_LABEL, CMD_LABEL + strlen(CMD_LABEL));
+static hash_t CMD_LABEL_HASH = get_simple_hash(CMD_LABEL, CMD_LABEL + strlen(CMD_LABEL));
 // TODO: #include <string.h>                                   ^~~~~~~~~~~~~~~~~!
 
 static const size_t LABEL_MAX_NAME_LENGTH = 128;
@@ -60,7 +60,7 @@ static int __cmd_calc_hashes() { // TODO: you can use __attribute__((constructor
                                  //       care about portability
     for (int cmd_id = 0; cmd_id < (char)(sizeof(CMD_SOURCE) / sizeof(*CMD_SOURCE)); ++cmd_id) {
         const char* command = CMD_SOURCE[cmd_id];
-        CMD_HASHES[cmd_id] = get_hash(command, command + strlen(command));
+        CMD_HASHES[cmd_id] = get_simple_hash(command, command + strlen(command));
     }
     return 0;
 }

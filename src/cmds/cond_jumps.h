@@ -10,7 +10,7 @@
     if (argument == 0) { \
         sscanf(ARG_PTR, "%s", lbl_name); \
         /* TODO: I think following can be extracted in function: */ \
-        hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name)); \
+        hash_t lbl_hash = get_simple_hash(lbl_name, lbl_name + strlen(lbl_name)); \
         argument = (int)get_label(LABEL_LIST, lbl_hash, ERRNO) - (int)CUR_ID; \
     } \
  \

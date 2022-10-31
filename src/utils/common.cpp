@@ -31,7 +31,7 @@ void MemorySegment_dtor(MemorySegment* segment) {
 
 void _MemorySegment_dump(MemorySegment* segment, unsigned int importance) {
     for (size_t id = 0; id < segment->size; ++id) {
-        _log_printf(importance, "dump", "[%6ld] = %d\n", id, segment->content[id]);
+        _log_printf(importance, "dump", "[%6lld] = %d\n", (long long) id, segment->content[id]);
     }
 }
 
@@ -58,7 +58,7 @@ const int NUMBER_OF_OWLS = 10;
 // Офигенно, ничего не менять.
 // Дополнил сову, сорри.
 void print_owl(const int argc, void** argv, const char* argument) {
-    UNUSE(argc); UNUSE(argv); UNUSE(argument);
+    SILENCE_UNUSED(argc); SILENCE_UNUSED(argv); SILENCE_UNUSED(argument);
     printf("-Owl argument detected, dropping emergency supply of owls.\n");
     for (int index = 0; index < NUMBER_OF_OWLS; index++) {
         puts(R"(    A_,,,_A    )");

@@ -21,7 +21,7 @@
  * @param fd file descriptor
  * @return size_t 
  */
-size_t flength(int fd);
+size_t get_file_length(int fd);
 
 /**
  * @brief Slice text stored in file into multiple lines.

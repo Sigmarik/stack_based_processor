@@ -105,7 +105,7 @@ bool stack_check_canary(const stack_canary_t value) {
 }
 
 void _stack_dump(Stack* const stack, unsigned int importance, const char* function, const size_t line, const char* file) {
-    _log_printf(importance, "dump", " ----- Stack dump in function %s of file %s (%ld): ----- \n", function, file, line);
+    _log_printf(importance, "dump", " ----- Stack dump in function %s of file %s (%lld): ----- \n", function, file, (long long)line);
 
     stack_report_t status = stack_status(stack);
     _log_printf(importance, "dump", "\tStatus: %s\n", status ? "CORRUPT" : "OK");
@@ -120,8 +120,8 @@ void _stack_dump(Stack* const stack, unsigned int importance, const char* functi
 
     ON_CANARY(_log_printf(importance, "dump", "\t\tLeft canary  = \"%6s\"\n", stack->_canary_left));
     ON_CANARY(_log_printf(importance, "dump", "\t\tRight canary = \"%6s\"\n", stack->_canary_right));
-    _log_printf(importance, "dump", "\t\tCapacity     = %ld\n", stack->capacity);
-    _log_printf(importance, "dump", "\t\tSize         = %ld\n", stack->size);
+    _log_printf(importance, "dump", "\t\tCapacity     = %lld\n", (long long)stack->capacity);
+    _log_printf(importance, "dump", "\t\tSize         = %lld\n", (long long)stack->size);
     _log_printf(importance, "dump", "\t\tBuffer       = %p\n", stack->buffer);
     _log_printf(importance, "dump", "\t\t\t[----] = \"%6s\"\n", stack->buffer);
 
@@ -132,26 +132,26 @@ void _stack_dump(Stack* const stack, unsigned int importance, const char* functi
 
     for (unsigned int elem_id = 0; elem_id < limit; ++elem_id) {
         stack_content_t* elem_start = _stack_content(stack) + elem_id;
-        char biteline[STACK_BYTES_PER_LINE * 9 + 1];
+        char bite_line[STACK_BYTES_PER_LINE * 9 + 1];
         size_t end_index = 0;
 
         for (unsigned int bite_id = 0; bite_id < STACK_BYTES_PER_LINE; ++bite_id) {
             int end_index_delta = 0;
-            sprintf(biteline + end_index, "0x%02X %n", 
+            sprintf(bite_line + end_index, "0x%02X %n", 
                     (unsigned int)(*((char*)elem_start + bite_id) & (unsigned char)0xff), &end_index_delta);
             end_index += (size_t)end_index_delta;
         }
         for (unsigned int bite_id = 0; bite_id < STACK_BYTES_PER_LINE; ++bite_id) {
             char bite = *((char*)elem_start + bite_id);
             int end_index_delta = 0;
-            sprintf(biteline + end_index, "%c %n", isprint(bite) ? bite : '.', &end_index_delta);
+            sprintf(bite_line + end_index, "%c %n", isprint(bite) ? bite : '.', &end_index_delta);
             end_index += (size_t)end_index_delta;
         }
 
-        biteline[sizeof(biteline) - 1] = '\0';
+        bite_line[sizeof(bite_line) - 1] = '\0';
 
         _log_printf(importance, "dump", "\t\t\t[%04d] = (%-6s) at %p: %s\n", elem_id,
-            *elem_start == STACK_CONTENT_POISON ? "POISON" : "VALUE", _stack_content(stack) + elem_id, biteline);
+            *elem_start == STACK_CONTENT_POISON ? "POISON" : "VALUE", _stack_content(stack) + elem_id, bite_line);
     }
 
     _log_printf(importance, "dump", "\t\t\t[####] = \"%6s\"\n", 
@@ -207,9 +207,9 @@ stack_hash_t _stack_hash(const Stack* const stack) {
     const char* stack_end = (const char*)(&stack->capacity + 1);
     ON_CANARY(stack_end -= alignof(stack_canary_t));
     ON_HASH(stack_end -= alignof(stack_hash_t));
-    hash_t hash = get_hash(stack, stack_end);
+    hash_t hash = get_simple_hash(stack, stack_end);
     if (check_ptr(stack->buffer)) {
-        hash += get_hash(stack->buffer, (char*)(_stack_content(stack) + stack->capacity) + 
+        hash += get_simple_hash(stack->buffer, (char*)(_stack_content(stack) + stack->capacity) + 
                                         ((char*)_stack_content(stack) - stack->buffer));
     }
     return hash;

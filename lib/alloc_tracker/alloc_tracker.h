@@ -62,11 +62,4 @@ void free_all_allocations();
  */
 void free_var(void** ptr);
 
-/**
- * @brief Safely call free() on pointer.
- * 
- * @param ptr
- */
-void void_free(void* ptr);
-
 #endif

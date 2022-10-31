@@ -110,7 +110,7 @@ int main(const int argc, const char** argv) {
 
     }, NULL, 0);
     track_allocation(&fd, (dtor_t*)close_var);
-    size_t size = flength(fd);
+    size_t size = get_file_length(fd);
 
     // TODO: I'm 52 lines in your main() (that's already too a lot for a function, it's huge), and 
     //       stuff related to actually disaming your code is only slowly beginning to appear. 
@@ -127,7 +127,7 @@ int main(const int argc, const char** argv) {
     log_printf(STATUS_REPORTS, "status", "Reading file content...\n");
     char* content = (char*) calloc(size, sizeof(*content));
     _LOG_FAIL_CHECK_(content, "error", ERROR_REPORTS, {
-        log_printf(ERROR_REPORTS, "error", "Failed to reallocate file content of size %ld, terminating.\n", size);
+        log_printf(ERROR_REPORTS, "error", "Failed to reallocate file content of size %lld, terminating.\n", (long long)size);
 
         return_clean(EXIT_FAILURE);
 
@@ -167,7 +167,7 @@ size_t read_header(char* ptr, FILE* output, int* err_code) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
     _LOG_FAIL_CHECK_(strncmp(FILE_PREFIX, ptr, PREFIX_SIZE) == 0, "error", ERROR_REPORTS, {
         log_printf(ERROR_REPORTS, "error", "Wrong file prefix, terminating. Prefix - \"%*s\", expected prefix - \"%*s\"\n",
-                                            PREFIX_SIZE, ptr, PREFIX_SIZE, FILE_PREFIX);
+                                            (int)PREFIX_SIZE, ptr, (int)PREFIX_SIZE, FILE_PREFIX);
         return 0;
     }, err_code, EIO);
     _LOG_FAIL_CHECK_(*(version_t*)(ptr+4) <= PROC_VERSION, "error", ERROR_REPORTS, {
@@ -206,7 +206,7 @@ int process_command(const char* prog_start, const char* ptr, FILE* file, int* co
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 
     log_printf(STATUS_REPORTS, "status", "Executing command %02X (mask %d) at 0x%0*X.\n", 
-               (*ptr >> 2) & 0xFF, *ptr & 3, sizeof(prog_start), ptr - prog_start);
+               (unsigned int)((*ptr >> 2) & 0xFF), *ptr & 3, (int)sizeof(prog_start), (unsigned int)(ptr - prog_start));
     //         ^~~~~~~~~~~   ^~~~       ^~~ TODO: gimme more, more random repeated and unexplained
     //                                            bitwise operations, definitely make it readable (irony)
     
@@ -219,7 +219,7 @@ int process_command(const char* prog_start, const char* ptr, FILE* file, int* co
         // TODO: undef!
 
         default:
-            log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", (*ptr) >> 2);
+            log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", (unsigned int)(*ptr) >> 2);
             if (err_code) *err_code = EIO;
             shift = 0;
         break;

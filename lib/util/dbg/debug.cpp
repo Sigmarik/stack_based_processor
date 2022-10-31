@@ -22,7 +22,7 @@ bool check_ptr(const void* ptr) {
     return result != -1;
 }
 
-hash_t get_hash(const void* start, const void* end) {
+hash_t get_simple_hash(const void* start, const void* end) {
     hash_t hash = 0xDEADBABEDEAD;
     for (const char* ptr = (const char*)start; ptr < (const char*)end; ++ptr) {
         hash *= 0xC0FEBABEDEAD;

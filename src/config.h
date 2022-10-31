@@ -26,7 +26,7 @@
 #endif
 
 //* DISASSEMBLER program
-#ifdef DISASM
+#ifdef DISASSEMBLER
 
     // Default name of the disassembler output file.
     const char* DEFAULT_OUTPUT_NAME = "program.txt";

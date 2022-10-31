@@ -25,13 +25,11 @@ static void log_prefix(const char* tag = "status", const unsigned int importance
  */
 static FILE* log_file(const unsigned int importance = ABSOLUTE_IMPORTANCE);
 
-void log_init(const char* filename, const unsigned int threshold, int* error_code) {
-    log_threshold = threshold; //   ^~~~~                             ^ TODO: inconsistent, settle on one style :)
-                               // Applies pretty much everywhere))
+void log_init(const char* filename, const unsigned int threshold, int* const error_code) {
+    log_threshold = threshold;
 
     if ((logfile = fopen(filename, "a"))) {
-        setvbuf(logfile, NULL, _IONBF, 1);
-        // TODO: You've disabled buffer^, it should be 0
+        setvbuf(logfile, NULL, _IONBF, 0);
 
         log_printf(ABSOLUTE_IMPORTANCE, "open", "Log file %s was opened.\n", filename);
         return;
@@ -42,25 +40,24 @@ void log_init(const char* filename, const unsigned int threshold, int* error_cod
 
 static void log_prefix(const char* tag, const unsigned int importance) {
     if (!log_file()) return;
-    time_t rawtime;
-    struct tm * timeinfo;
+    time_t raw_time;
+    struct tm * time_info;
 
-    time(&rawtime);
-    timeinfo = localtime (&rawtime);
-    char* pc_timestamp = asctime(timeinfo);
+    time(&raw_time);
+    time_info = localtime (&raw_time);
+    char* pc_timestamp = asctime(time_info);
     pc_timestamp[strlen(pc_timestamp) - 1] = '\0';
 
     fprintf(log_file(importance), "%-20s [%s]:  ", pc_timestamp, tag);
 }
 
-// TODO: read about __attribute__((format(...))), it will be useful!
 void _log_printf(const unsigned int importance, const char* tag, const char* format, ...) {
     va_list args;
     va_start(args, format);
 
     if (importance >= log_threshold && logfile) {
         log_prefix(tag, importance);
-        vfprintf(log_file(importance), format, args); // TODO: attribute... should also silence warining
+        vfprintf(log_file(importance), format, args);
         fflush(log_file(importance));
     }
 
@@ -74,8 +71,5 @@ static FILE* log_file(const unsigned int importance) {
 void log_close(int* error_code) {
     if (!log_file()) return;
     log_printf(ABSOLUTE_IMPORTANCE, "close", "Closing log file.\n\n");
-    if (!fclose(logfile)) {
-        if (error_code) *error_code = FILE_ERROR;
-// TODO:^~~~~~~~~~~~~~~ nested if can be replaced with &&
-    }
+    if (!fclose(logfile) && error_code) *error_code = FILE_ERROR;
 }

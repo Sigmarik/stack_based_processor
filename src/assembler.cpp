@@ -228,7 +228,7 @@ int main(const int argc, const char** argv) {
         return_clean(EXIT_FAILURE);
 
     }, NULL, 0);
-    setvbuf(input, NULL, _IOFBF, flength(fileno(input)));
+    setvbuf(input, NULL, _IOFBF, get_file_length(fileno(input)));
 
     char* buffer = NULL;
     char** lines = NULL;
@@ -253,7 +253,7 @@ int main(const int argc, const char** argv) {
 
     FILE* listing = NULL;
     if (gen_listing) {
-        log_printf(STATUS_REPORTS, "status", "Opening listing file .\n", listing_name);
+        log_printf(STATUS_REPORTS, "status", "Opening listing file .\n");
 
         listing = fopen(listing_name, "w");
 
@@ -368,17 +368,17 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
     if (*line != '\0' && first_char != CMD_COMMENT_CHAR) do {
 
         sscanf(line, "%s%n", code, &shift);
-        hash = get_hash(code, code + strlen(code));
+        hash = get_simple_hash(code, code + strlen(code));
 
         if (hash == CMD_LABEL_HASH) { // TODO: extract!
             char lbl_name[LABEL_MAX_NAME_LENGTH] = "";
             sscanf(line + shift, "%s", lbl_name);
             
-            hash_t lbl_hash = get_hash(lbl_name, lbl_name + strlen(lbl_name));
+            hash_t lbl_hash = get_simple_hash(lbl_name, lbl_name + strlen(lbl_name));
             // Why ^~~~~~~~ are you calculating hash outside of add_label? TODO: ?
             add_label(labels, lbl_hash, output_content.size + HEADER_SIZE, err_code);
             
-            log_printf(STATUS_REPORTS, "status", "Label %s was set to %0*X.\n", lbl_name, sizeof(uintptr_t), output_content.size);
+            log_printf(STATUS_REPORTS, "status", "Label %s was set to %0*X.\n", lbl_name, (int)sizeof(uintptr_t), (unsigned int)output_content.size);
             
             break;
         }
@@ -389,7 +389,7 @@ void process_line(LabelSet* labels, const char* line, FILE* listing, int* const 
         if_cmd_not_defined log_printf(ERROR_REPORTS, "error", "Unknown command %s.\n", code);
     } while (0); // TODO: this is a huge sign to you that this should become a function! *chuckle*
 
-    log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %ld.\n", cmd_size);
+    log_printf(STATUS_REPORTS, "status", "Writing command to the file, cmd size -> %lld.\n", (long long)cmd_size);
     memcpy(output_content.content + output_content.size, sequence, cmd_size);
     
     output_content.size += cmd_size;

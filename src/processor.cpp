@@ -131,7 +131,7 @@ int main(const int argc, const char** argv) {
         return_clean(EXIT_FAILURE);
 
     }, NULL, 0);
-    size_t size = flength(fd);
+    size_t size = get_file_length(fd);
 
     // TODO: read assembler.cpp and disasm.cpp, there are plenty of stuff
     //       you need to apply here too.
@@ -232,7 +232,7 @@ size_t read_header(char* ptr, int* err_code) {
 
 #define DEF_CMD(name, parse_script, exec_script, disasm_script) case CMD_##name: { \
     log_printf(STATUS_REPORTS, "status", "Executing command " #name " (mask %d) at 0x%0*X.\n", \
-                                         *ptr & 3, sizeof(void*), ptr - prog_start); \
+                                         *ptr & 3, (int)sizeof(void*), (unsigned int)(ptr - prog_start)); \
     const char *COMMAND_NAME = #name; \
     COMMAND_NAME = COMMAND_NAME; \
     exec_script; \
@@ -282,7 +282,7 @@ int execute_command(const char* prog_start, const char* ptr, // TODO: there is n
         #include "cmddef.h"
 
         default:
-            log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", (*ptr) >> 2);
+            log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", (unsigned int)(*ptr) >> 2);
             if (err_code) *err_code = EIO; // TODO: extract, very common idea!
             shift = 0;
         break;

@@ -52,12 +52,12 @@ void parse_args(const int argc, const char** argv, const int action_c, const str
 }
 
 void edit_int(const int argc, void** argv, const char* argument) {
-    UNUSE(argc);
+    SILENCE_UNUSED(argc);
     *(int*)argv[0] = atoi(argument);
 }
 
 void edit_string(const int argc, void** argv, const char* argument) {
-    UNUSE(argc);
+    SILENCE_UNUSED(argc);
     strcpy(*(char**)argv, argument);
 }
 

@@ -8,7 +8,7 @@ static struct Allocation {
     Allocation* _next = NULL;
     Allocation* _prev = NULL;
 } GLB_allocations[MAX_ALLOCATIONS] = {};
-// TODO: you can incorporate this list in allocation itself
+//! TODO: you can incorporate this list in allocation itself
 //
 // For example,
 //
@@ -76,8 +76,7 @@ static char __allocations_filler = __fill_allocations();
  * 
  * @param ptr pointer to the element
  */
-static void __pop_allocation(Allocation* ptr) { // TODO: why name static in .cpp with underscores?)
-                                                //       It's not like anyone else will have to see it)
+static void pop_allocation(Allocation* ptr) {
     ptr->subject = NULL;
     ptr->dtor = NULL;
 
@@ -102,8 +101,10 @@ void _track_allocation(void* subject, dtor_t *dtor) {
 void untrack_allocation(void* subject) {
     for (Allocation* ptr = GLB_allocations->_next; ptr != GLB_allocations; ptr = ptr->_next) {
 
-        if (ptr->subject == subject) { __pop_allocation(ptr); break; }
-        // TODO:                     ^~ lines are free, aren't they?)
+        if (ptr->subject == subject) {
+            pop_allocation(ptr);
+            break; 
+        }
     }
 }
 
@@ -113,7 +114,7 @@ void free_allocation(void* subject) {
         if (ptr->subject != subject) {
 
             ptr->dtor(ptr->subject);
-            __pop_allocation(ptr);
+            pop_allocation(ptr);
 
             break;
         }
@@ -131,11 +132,6 @@ void free_all_allocations() {
 void free_var(void** ptr) {
     _LOG_FAIL_CHECK_(ptr, "error", ERROR_REPORTS, return, &errno, EFAULT);
     log_printf(STATUS_REPORTS, "status", "Freeing address %p.\n", *ptr);
-    if (*ptr) free(*ptr); // TODO: you've even wrote a function for this below, not to mention it's
-                          //       does it already... Why don't you use it?
+    free(*ptr);
     *ptr = NULL;
-}
-
-void void_free(void* ptr) {
-    if (ptr) free(ptr); // TODO: That's exactly what free already does
 }
