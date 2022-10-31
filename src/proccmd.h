@@ -18,6 +18,7 @@ static const char CMD_COMMENT_CHAR = '#';
 
 static const char CMD_LABEL[] = "HERE";
 static hash_t CMD_LABEL_HASH = get_hash(CMD_LABEL, CMD_LABEL + strlen(CMD_LABEL));
+// TODO: #include <string.h>                                   ^~~~~~~~~~~~~~~~~!
 
 static const size_t LABEL_MAX_NAME_LENGTH = 128;
 
@@ -39,6 +40,12 @@ static const char* CMD_SOURCE[] = {
 
 //* Command hashes.
 static hash_t CMD_HASHES[sizeof(CMD_SOURCE) / sizeof(*CMD_SOURCE)];
+//                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// TODO: imagine you mistype this in one of 1000 places you copied this to...
+//       What a funny bug to hunt down. Like really, bell in your head should
+//       have already told you to extract it long time ago.
+
+// Fine tune that compas in your brain, so it sees it.
 
 /**
  * @brief [DO NOT CALL] Recalculate CMD_HASHES.
@@ -49,7 +56,8 @@ static int __cmd_calc_hashes();
 
 static int __cmd_hash_calculator = __cmd_calc_hashes();
 
-static int __cmd_calc_hashes() {
+static int __cmd_calc_hashes() { // TODO: you can use __attribute__((constructor)) if you don't
+                                 //       care about portability
     for (int cmd_id = 0; cmd_id < (char)(sizeof(CMD_SOURCE) / sizeof(*CMD_SOURCE)); ++cmd_id) {
         const char* command = CMD_SOURCE[cmd_id];
         CMD_HASHES[cmd_id] = get_hash(command, command + strlen(command));

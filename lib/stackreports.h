@@ -13,7 +13,18 @@
 #define STACK_REPORTS_H
 
 typedef int stack_report_t;
-enum STACK_STATUSES {
+enum STACK_STATUSES { // TODO: Enums are usually named the same way as structs and in singular,
+                      //       because they represent a normal type that can be, for example,
+                      //       returned from function:
+                      //
+                      // StackStatus foo(...);
+                      //
+                      // Is a lot more natural than:
+                      // STACK_STATUSES foo(...); 
+                      //
+                      // Especially the whole plurality thing, because foo is going to return
+                      // only one status, not two, not three.
+
     STACK_NULL = 1 << 0,
     STACK_BIG_SIZE = 1 << 1,
     STACK_NULL_CONTENT = 1 << 2,

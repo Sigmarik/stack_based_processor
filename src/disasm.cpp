@@ -105,7 +105,10 @@ int main(const int argc, const char** argv) {
         #include "cmd_flags/disasm_flags.h"
     };
     static const int number_of_tags = sizeof(line_tags) / sizeof(*line_tags);
+    //                          TODO: ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //                                ARRAY_SIZE macro? Also, code repetition (see assembler.cpp) 
 
+    // TODO: in assembler.cpp i wrote about extracting arg parsing, it should apply here too 
     parse_args(argc, argv, number_of_tags, line_tags);
     log_init("program_log.log", log_threshold, &errno);
     print_label();
@@ -137,8 +140,8 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Opening file %s.\n", file_name);
     int fd = open(file_name, O_RDONLY);
-    _LOG_FAIL_CHECK_(fd != -1, "error", ERROR_REPORTS, {
-        printf("File was not opened, terminating...\n");
+    _LOG_FAIL_CHECK_(fd != -1, "error", ERROR_REPORTS, { // TODO: maybe roll your own wrapper of open that plays nice with
+        printf("File was not opened, terminating...\n"); //       your error code system?
 
         return_clean(EXIT_FAILURE);
 
@@ -146,6 +149,18 @@ int main(const int argc, const char** argv) {
     track_allocation(&fd, (dtor_t*)close_var);
     size_t size = flength(fd);
 
+    // TODO: I'm 52 lines in your main() (that's already too a lot for a function, it's huge), and 
+    //       stuff related to actually disaming your code is only slowly beginning to appear. 
+    //
+    //       Do you see problem? It's shouldn't be like this, your code here is large yet not very
+    //       "interesting", you basically have like 2-3 logical steps spread accross almost 90 lines
+    //       with high level steps like execute_commands and interleaved with low-level and
+    //       uninteresting memory allocations for simple arrays!
+    //
+    //       Look at assembler.cpp, you have same problem there (and I have more comments about it)
+    //
+    //       I'd even argue this tendency of your code to have steps of different logical level, and
+    //       such large functions like this to be main problem right now. Should really try to look into it!
     log_printf(STATUS_REPORTS, "status", "Reading file content...\n");
     char* content = (char*) calloc(size, sizeof(*content));
     _LOG_FAIL_CHECK_(content, "error", ERROR_REPORTS, {
@@ -180,7 +195,7 @@ int main(const int argc, const char** argv) {
 
 // Офигенно, ничего не менять.
 // Дополнил сову, сорри.
-void print_owl(const int argc, void** argv, const char* argument) {
+void print_owl(const int argc, void** argv, const char* argument) { // TODO: stop copying for God's sake!
     UNUSE(argc); UNUSE(argv); UNUSE(argument);
     printf("-Owl argument detected, dropping emergency supply of owls.\n");
     for (int index = 0; index < NUMBER_OF_OWLS; index++) {
@@ -208,11 +223,13 @@ size_t read_header(char* ptr, FILE* output, int* err_code) {
         return 0;
     }, err_code, EIO);
     _LOG_FAIL_CHECK_(*(version_t*)(ptr+4) <= PROC_VERSION, "error", ERROR_REPORTS, {
+        // TODO:                       ^ what is this 4? Comment, extract, do whatever so it's obvious.
         log_printf(ERROR_REPORTS, "error", "Wrong file version, terminating. File version - %d, disassembler version - %d.\n",
                                                                             *(version_t*)(ptr+4), PROC_VERSION);
         return 0;
     }, err_code, EIO);
     fprintf(output, "# Binary file version: %d\n", *(version_t*)(ptr+4));
+    //                                                TODO:      ^~~~~ and again, extract
     fprintf(output, "# Disassembler version: %d\n\n", PROC_VERSION);
     return HEADER_SIZE;
 }
@@ -227,10 +244,13 @@ size_t read_header(char* ptr, FILE* output, int* err_code) {
 
 #define DEF_CMD(name, parse_script, exec_script, disasm_script) \
 case CMD_##name: {fprintf(file, #name " "); disasm_script; putc('\n', file);} break;
+// TODO: spaces  ^~ newlines              ^~ and in all other places too, this isn't readable!
+//       And there is no style guide that accepts this and for a good reason.
 
+// TODO: move closer to usage! 
 #define SHIFT shift
 #define EXEC_POINT ptr
-#define ARG_PTR ptr + 1
+#define ARG_PTR ptr + 1 // TODO: brackets!
 #define ERRNO err_code
 #define OUT_FILE file
 
@@ -239,6 +259,8 @@ int execute_command(const char* prog_start, const char* ptr, FILE* file, int* co
 
     log_printf(STATUS_REPORTS, "status", "Executing command %02X (mask %d) at 0x%0*X.\n", 
                (*ptr >> 2) & 0xFF, *ptr & 3, sizeof(prog_start), ptr - prog_start);
+    //         ^~~~~~~~~~~   ^~~~       ^~~ TODO: gimme more, more random repeated and unexplained
+    //                                            bitwise operations, definitely make it readable (irony)
     
     _LOG_FAIL_CHECK_(file, "error", ERROR_REPORTS, return 0, err_code, EFAULT);
 
@@ -246,6 +268,7 @@ int execute_command(const char* prog_start, const char* ptr, FILE* file, int* co
 
     switch ((*ptr) >> 2) {
         #include "cmddef.h"
+        // TODO: undef!
 
         default:
             log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", (*ptr) >> 2);
@@ -259,6 +282,7 @@ int execute_command(const char* prog_start, const char* ptr, FILE* file, int* co
 
 #undef DEF_CMD
 
+// TODO: I've already seen this function, almost a complete copy, extract immediately!
 const char* get_file_name(const int argc, const char** argv) {
     const char* file_name = NULL;
 
@@ -270,6 +294,12 @@ const char* get_file_name(const int argc, const char** argv) {
     return file_name;
 }
 
+// TODO: This is a joke, code repetition is one of programmer's most dangerous
+//       enemies, it leads to completely unmaintainable, unreadable
+//       impossible to optimize, change and improve code.
+//
+//       And you're just standing here copying whole functions as if 
+//       it's nothing, that's unacceptable!!
 const char* get_output_file_name(const int argc, const char** argv) {
     const char* file_name = NULL;
 

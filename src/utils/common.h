@@ -19,6 +19,7 @@
  * 
  */
 #define return_clean(value) do { free_all_allocations(); return value; } while (0)
+// TODO: i think this belongs in alloc_tracker.h
 
 //* We need this function as it is impossible to create static constant lists from local functions.
 //* So... What it does is it creates a dynamic array and tracks it for later deletion.
@@ -34,12 +35,13 @@ void** bundle(size_t count, ...);
 /**
  * @brief Array with stored size.
  * 
- */
+ */ // TODO: You've already written quite a few arrays... Another one or time to generilize?)
 struct MemorySegment {
     int* content = NULL;
     size_t size = 1024;
 };
 
+// TODO: I think this too can go in memory allocation header
 void MemorySegment_ctor(MemorySegment* segment);
 void MemorySegment_dtor(MemorySegment* segment);
 
@@ -54,8 +56,9 @@ void _MemorySegment_dump(MemorySegment* segment, unsigned int importance);
  * @brief Pseudo-2D array with defined dimentions.
  * 
  */
-struct FrameBuffer {
-    int* content = NULL;
+struct FrameBuffer { // TODO: doesn't need to be called FrameBuffer, this is just generic 2DArray
+    int* content = NULL; // You can than do typedef 2DArray FrameBuffer; if you don't want to lose
+                         // clarity.
     size_t width = 64;
     size_t height = 32;
 };
@@ -72,5 +75,7 @@ void FrameBuffer_dtor(FrameBuffer* buffer);
  * @return 
  */
 int clamp(const int value, const int left, const int right);
+// TODO: this could be moved in your-math.h, creating common.h
+//       for such things is a bit low-effort 
 
 #endif

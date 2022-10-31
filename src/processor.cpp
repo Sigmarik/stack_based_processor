@@ -30,6 +30,8 @@
 
 #define PROCESSOR
 
+// TODO: read everything I've writte about code repetition in assembler.cpp and disasm.cpp, apply here, please!
+
 typedef long long stack_content_t;
 stack_content_t STACK_CONTENT_POISON = (stack_content_t) 0xDEADBABEC0FEBEEF;
 #include "lib/stackworks.h"
@@ -91,14 +93,15 @@ const char* get_file_name(const int argc, const char** argv);
  * @brief Make console empty.
  * 
  */
-void clear_console();
+void clear_console(); // TODO: extract
 
 /**
  * @brief Draw picture stored in VMD to the screen with UTF8 characters.
  * 
  */
-void draw_vmd(FrameBuffer* buffer);
+void draw_vmd(FrameBuffer* buffer); // TODO: and this extract too
 
+// TODO: extract everything related to console drawing
 static const char PIX_STATES[] = R"( .'`^",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$)";
 
 static const int NUMBER_OF_OWLS = 10;
@@ -121,9 +124,9 @@ int main(const int argc, const char** argv) {
     log_init("program_log.log", log_threshold, &errno);
     print_label();
 
-    FrameBuffer_ctor(&vmd);
-    MemorySegment_ctor(&ram);
-    MemorySegment_ctor(&reg);
+    FrameBuffer_ctor(&vmd); //   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~v
+    MemorySegment_ctor(&ram); // TODO: don't split constructors  with declarations!! (place them right after)
+    MemorySegment_ctor(&reg); //       it's so easy to just use broken object before intialization, why allow it??
     track_allocation(&vmd, (dtor_t*)FrameBuffer_dtor);
     track_allocation(&ram, (dtor_t*)MemorySegment_dtor);
     track_allocation(&reg, (dtor_t*)MemorySegment_dtor);
@@ -158,6 +161,9 @@ int main(const int argc, const char** argv) {
 
     }, NULL, 0);
     size_t size = flength(fd);
+
+    // TODO: read assembler.cpp and disasm.cpp, there are plenty of stuff
+    //       you need to apply here too.
 
     log_printf(STATUS_REPORTS, "status", "Reading file content...\n");
     char* content = (char*) calloc(size, sizeof(*content));
@@ -195,6 +201,7 @@ int main(const int argc, const char** argv) {
 
     log_printf(STATUS_REPORTS, "status", "Starting executing commands...\n");
     int delta = 0;
+    // TODO: extract! (I'm getting tired, please tell me you got the idea)
     while ((delta = execute_command(content, pointer, &stack, &addr_stack, &ram, &reg, &vmd, &errno)) != 0) {
 
         char* prev_ptr = pointer;
@@ -243,8 +250,15 @@ size_t read_header(char* ptr, int* err_code) {
         log_printf(ERROR_REPORTS, "error", "Wrong file prefix, terminating. Prefix - \"%*s\", expected prefix - \"%*s\"\n",
                                             PREFIX_SIZE, ptr, PREFIX_SIZE, FILE_PREFIX);
         return 0;
-    }, err_code, EIO);
+    }, err_code, EIO); // TODO: so many this things with exact same arguments, lots of common patterns:
+                       //       check + log, check + propagate error, check + update code, check + return
+                       //
+                       // And you're missing all of them, can't you come up with a way to make this constructions
+                       // more descriptive (less noisy if you wish)
+
     _LOG_FAIL_CHECK_(*(version_t*)(ptr+4) <= PROC_VERSION, "error", ERROR_REPORTS, {
+        // TODO:                   ^~~~~ and again??! Are you trying to win code repetition competiton?!
+        //                               Sorry to disappoint, it's not that kind of competiton!!
         log_printf(ERROR_REPORTS, "error", "Wrong file version, terminating. File version - %d, processor version - %d.\n",
                                                                             *(version_t*)(ptr+4), PROC_VERSION);
         return 0;
@@ -268,6 +282,7 @@ size_t read_header(char* ptr, int* err_code) {
     exec_script; \
 } break;
 
+// TODO: as always, move closer to usage, undef after usage, combine multiple statements in do...while
 #define STACK           stack
 #define ADDR_STACK      addr_stack
 #define SHIFT           shift
@@ -282,7 +297,8 @@ size_t read_header(char* ptr, int* err_code) {
 #define GET_TOP(var)    _LOG_EMPT_STACK_(COMMAND_NAME); var = stack_get(STACK, ERRNO)
 #define POP_TOP()       stack_pop(STACK, ERRNO)
 
-int execute_command(const char* prog_start, const char* ptr,
+int execute_command(const char* prog_start, const char* ptr, // TODO: there is no reason to have so many arguments,
+                                                             //       extract them in some kind of "context" struct.
                     Stack* const stack, Stack* const addr_stack,
                     MemorySegment* ram, MemorySegment* reg, FrameBuffer* vmd,
                     int* const err_code) {
@@ -306,11 +322,12 @@ int execute_command(const char* prog_start, const char* ptr,
     int shift = 1;
 
     switch ((*ptr) >> 2) {
+        //  ^~~~~~~~~~~ TODO: explain!!
         #include "cmddef.h"
 
         default:
             log_printf(ERROR_REPORTS, "error", "Unknown command [%0X]. Terminating.\n", (*ptr) >> 2);
-            if (err_code) *err_code = EIO;
+            if (err_code) *err_code = EIO; // TODO: extract, very common idea!
             shift = 0;
         break;
     }
@@ -320,7 +337,7 @@ int execute_command(const char* prog_start, const char* ptr,
 
 #undef DEF_CMD
 
-const char* get_file_name(const int argc, const char** argv) {
+const char* get_file_name(const int argc, const char** argv) { // TODO: you've got to be kidding
     const char* file_name = NULL;
 
     for (int argument_id = 1; argument_id < argc; ++argument_id) {
@@ -333,7 +350,7 @@ const char* get_file_name(const int argc, const char** argv) {
 
 #ifdef __linux__
 void clear_console() {
-    system("clear");
+    system("clear"); // TODO: system is very slow, consider carefully
 }
 #elif defined(WIN32) || defined(WIN64)
 void clear_console() {

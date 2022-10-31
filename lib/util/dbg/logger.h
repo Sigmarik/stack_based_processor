@@ -59,7 +59,9 @@ enum IMPORTANCES {
  * @param tag prefix of the message
  * @param __VA_ARGS__ arguments as if they were in printf()
  */
-#define log_printf(importance, tag, ...) do{}while(0)
+#define log_printf(importance, tag, ...) do{}while(0) // TODO: this is one way to do it, other common
+//                                          ^         //       alternative is ((void) 0)
+// TODO: care to add space :?               |
 #endif
 
 /**

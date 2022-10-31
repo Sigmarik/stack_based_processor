@@ -14,6 +14,7 @@ DEF_CMD(CCLR, {}, {
 
 DEF_CMD(DRAW, {}, {
     draw_vmd(&VMD); //* Defined in processor.cpp
+    // TODO: oh, you learned how to make functions! Thank you, do this more often, please!! (not really a TODO)
 }, {})
 
 DEF_CMD(RINT, {}, {

@@ -8,6 +8,7 @@ void** bundle(size_t count, ...) {
     va_start(args, count);
 
     void** array = (void**) calloc(count, sizeof(*array));
+    // TODO: what if calloc failed?
     track_allocation(array, free);
 
     for (size_t index = 0; index < count; index++) {
@@ -36,11 +37,12 @@ void _MemorySegment_dump(MemorySegment* segment, unsigned int importance) {
 
 void FrameBuffer_ctor(FrameBuffer* buffer) {
     buffer->content = (int*) calloc(buffer->width * buffer->height, sizeof(*buffer->content));
+    // TODO: what if calloc fails?
 }
 
 void FrameBuffer_dtor(FrameBuffer* buffer) {
     free(buffer->content);
-    buffer->content = NULL;
+    buffer->content = NULL; // TODO: Named designators?!
     buffer->width = 0;
     buffer->height = 0;
 }

@@ -9,6 +9,8 @@
  * 
  */
 
+// TODO: read assembler_flags.h
+
 #include "common_flags.h"
 
 { {'R', ""}, { bundle(1, &reg.size), 1, edit_int},

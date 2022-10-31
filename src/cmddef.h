@@ -92,3 +92,7 @@
 #include "cmds/memops.h"
 #include "cmds/arifm.h"
 #include "cmds/interaction.h"
+
+
+// TODO: undef all the utility macros that you've created, so you don't have
+//       to do it in every source file, you include this to. 
